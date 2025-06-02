@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
 import Image from "next/image"
+import logo from "@/public/logo.png"
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -117,7 +118,7 @@ export default function LoginPage() {
           <div className="text-center">
           <Link href="/" className="inline-block">
             <div className="flex items-center justify-center">
-              <Image src="/logo.png" alt="SportLink" width={260} height={120} />
+              <Image src={logo} alt="SportLink" width={260} height={120} />
             </div>
           </Link>
           </div>
