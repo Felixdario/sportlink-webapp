@@ -359,8 +359,8 @@ export default function QuadrasPage() {
             )}
           </div>
         </TabsContent>
-        <TabsContent value="mapa" className="mt-4">
-          <MapaQuadras quadras={quadrasFiltradas} />
+        <TabsContent value="mapa">
+          <MapaQuadras quadras={quadrasFiltradas} key={`map-view-${activeTab}`} />
         </TabsContent>
       </Tabs>
     </div>

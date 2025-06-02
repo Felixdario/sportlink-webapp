@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -12,22 +12,88 @@ import { Star, Users, MapPin } from "lucide-react"
 export default function MapaQuadras({ quadras }: { quadras: any[] }) {
   const { theme } = useTheme()
   const [mounted, setMounted] = useState(false)
-  const [mapComponent, setMapComponent] = useState<React.ReactNode | null>(null)
+  const mapContainerRef = useRef<HTMLDivElement>(null)
+  const mapInstanceRef = useRef<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     setMounted(true)
+  }, [])
 
-    // Importar dinamicamente os componentes do Leaflet apenas no cliente
-    const loadMap = async () => {
+  useEffect(() => {
+    // Skip on server-side rendering
+    if (!mounted) return
+
+    // Clean function to destroy the map instance
+    const cleanupMap = () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove()
+        mapInstanceRef.current = null
+      }
+    }
+
+    // Create a new map instance
+    const createMap = async () => {
+      setIsLoading(true)
+      setError(null)
+      
+      // Clean up any existing map first
+      cleanupMap()
+      
       try {
-        // Importar os módulos do Leaflet apenas no cliente
+        // Dynamically import Leaflet
         const L = await import("leaflet")
-        const { MapContainer, TileLayer, Marker, Popup } = await import("react-leaflet")
-
-        // Importar o CSS do Leaflet
         await import("leaflet/dist/leaflet.css")
-
-        // Corrigir o problema dos ícones do Leaflet
+        
+        // Make sure container exists
+        if (!mapContainerRef.current) return
+        
+        // Apply dark mode styles
+        if (theme === "dark") {
+          const styleEl = document.createElement('style')
+          styleEl.innerHTML = `
+            .dark-map .leaflet-tile {
+              filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+            }
+            .dark-map .leaflet-container {
+              background: #333;
+            }
+            .leaflet-popup-content-wrapper {
+              background: ${theme === "dark" ? "#1f1f1f" : "#fff"};
+              color: ${theme === "dark" ? "#fff" : "#000"};
+            }
+            .leaflet-popup-tip {
+              background: ${theme === "dark" ? "#1f1f1f" : "#fff"};
+            }
+          `
+          document.head.appendChild(styleEl)
+        }
+        
+        // Create map instance
+        const defaultCenter = [-23.5505, -46.6333]
+        const map = L.map(mapContainerRef.current, {
+          center: defaultCenter,
+          zoom: 13,
+          zoomControl: false,
+        })
+        
+        // Store the map instance for later cleanup
+        mapInstanceRef.current = map
+        
+        // Add tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map)
+        
+        // Apply dark theme if needed
+        if (theme === "dark") {
+          mapContainerRef.current.classList.add("dark-map")
+        } else {
+          mapContainerRef.current.classList.remove("dark-map")
+        }
+        
+        // Add markers for each quadra
         const icon = L.icon({
           iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
           iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
@@ -37,107 +103,75 @@ export default function MapaQuadras({ quadras }: { quadras: any[] }) {
           popupAnchor: [1, -34],
           shadowSize: [41, 41],
         })
-
-        // Definir o centro inicial do mapa (São Paulo)
-        const defaultCenter = [-23.5505, -46.6333]
-
-        // Criar o componente do mapa
-        setMapComponent(
-          <>
-            <style jsx global>{`
-              .dark-map .leaflet-tile {
-                filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
-              }
-              .dark-map .leaflet-container {
-                background: #333;
-              }
-              .leaflet-popup-content-wrapper {
-                background: ${theme === "dark" ? "#1f1f1f" : "#fff"};
-                color: ${theme === "dark" ? "#fff" : "#000"};
-              }
-              .leaflet-popup-tip {
-                background: ${theme === "dark" ? "#1f1f1f" : "#fff"};
-              }
-            `}</style>
-
-            <MapContainer
-              center={defaultCenter}
-              zoom={13}
-              style={{ height: "100%", width: "100%" }}
-              zoomControl={false}
-              className={theme === "dark" ? "dark-map" : ""}
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        
+        // Add markers
+        quadras.forEach(quadra => {
+          const marker = L.marker([quadra.latitude, quadra.longitude], { icon })
+            .addTo(map)
+            
+          // Create popup content
+          const popupContent = document.createElement('div')
+          popupContent.className = `p-1 ${theme === "dark" ? "text-white" : "text-black"}`
+          popupContent.innerHTML = `
+            <div class="mb-2">
+              <img 
+                src="${quadra.imagem || "/placeholder.svg"}" 
+                alt="${quadra.nome}" 
+                class="w-full h-32 object-cover rounded-md mb-2"
               />
-
-              {quadras.map((quadra) => (
-                <Marker key={quadra.id} position={[quadra.latitude, quadra.longitude]} icon={icon}>
-                  <Popup className="custom-popup" minWidth={280} maxWidth={320}>
-                    <div className={`p-1 ${theme === "dark" ? "text-white" : "text-black"}`}>
-                      <div className="mb-2">
-                        <img
-                          src={quadra.imagem || "/placeholder.svg"}
-                          alt={quadra.nome}
-                          className="w-full h-32 object-cover rounded-md mb-2"
-                        />
-                        <h3 className="font-semibold text-base">{quadra.nome}</h3>
-                        <p className="text-sm opacity-70">{quadra.endereco}</p>
-                      </div>
-
-                      <div className="flex items-center text-sm mb-2">
-                        <Star className="w-4 h-4 text-yellow-500 mr-1" />
-                        <span>
-                          {quadra.avaliacao} ({quadra.avaliacoes} avaliações)
-                        </span>
-                        <span className="mx-1">•</span>
-                        <span>{quadra.preco}</span>
-                      </div>
-
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        {quadra.esportes.map((esporte: string, i: number) => (
-                          <Badge
-                            key={i}
-                            variant="outline"
-                            className="bg-primary-sportlink/10 text-primary-sportlink border-primary-sportlink/20 text-xs"
-                          >
-                            {esporte}
-                          </Badge>
-                        ))}
-                      </div>
-
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center text-sm opacity-70">
-                          <Users className="w-4 h-4 mr-1" />
-                          <span>{quadra.jogadoresHoje} pessoas hoje</span>
-                        </div>
-                        <Button size="sm">Ver detalhes</Button>
-                      </div>
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
-          </>,
-        )
+              <h3 class="font-semibold text-base">${quadra.nome}</h3>
+              <p class="text-sm opacity-70">${quadra.endereco}</p>
+            </div>
+            
+            <div class="flex items-center text-sm mb-2">
+              <span>${quadra.avaliacao} (${quadra.avaliacoes} avaliações)</span>
+              <span class="mx-1">•</span>
+              <span>${quadra.preco}</span>
+            </div>
+          `
+          
+          // Add esportes badges
+          const esportesDiv = document.createElement('div')
+          esportesDiv.className = 'flex flex-wrap gap-1 mb-2'
+          quadra.esportes.forEach((esporte: string) => {
+            const badge = document.createElement('span')
+            badge.className = 'bg-primary-sportlink/10 text-xs px-2 py-1 rounded-full'
+            badge.textContent = esporte
+            esportesDiv.appendChild(badge)
+          })
+          popupContent.appendChild(esportesDiv)
+          
+          // Add footer
+          const footer = document.createElement('div')
+          footer.className = 'flex items-center justify-between mt-2'
+          footer.innerHTML = `
+            <div class="flex items-center text-sm opacity-70">
+              <span>${quadra.jogadoresHoje} pessoas hoje</span>
+            </div>
+            <button class="bg-primary px-3 py-1 text-xs rounded text-white">Ver detalhes</button>
+          `
+          popupContent.appendChild(footer)
+          
+          // Bind popup to marker
+          marker.bindPopup(popupContent, { 
+            minWidth: 280,
+            maxWidth: 320
+          })
+        })
+        
+        setIsLoading(false)
       } catch (error) {
         console.error("Erro ao carregar o mapa:", error)
-        setMapComponent(
-          <div className="flex flex-col items-center justify-center h-full">
-            <MapPin className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-medium mb-2">Erro ao carregar o mapa</h3>
-            <p className="text-muted-foreground text-center max-w-md">
-              Não foi possível carregar o mapa. Por favor, tente novamente mais tarde.
-            </p>
-          </div>,
-        )
+        setError("Não foi possível carregar o mapa. Por favor, tente novamente mais tarde.")
+        setIsLoading(false)
       }
     }
-
-    if (mounted) {
-      loadMap()
-    }
+    
+    // Initialize map
+    createMap()
+    
+    // Cleanup on unmount or deps change
+    return cleanupMap
   }, [mounted, theme, quadras])
 
   // Verificar se há quadras para exibir
@@ -157,7 +191,7 @@ export default function MapaQuadras({ quadras }: { quadras: any[] }) {
     )
   }
 
-  if (!mounted || !mapComponent) {
+  if (!mounted || isLoading) {
     return (
       <div className="bg-muted rounded-lg overflow-hidden h-[500px] flex items-center justify-center">
         <div className="text-center">
@@ -171,5 +205,21 @@ export default function MapaQuadras({ quadras }: { quadras: any[] }) {
     )
   }
 
-  return <div className="rounded-lg overflow-hidden border border-border h-[600px] relative">{mapComponent}</div>
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[500px] bg-muted rounded-lg">
+        <MapPin className="h-12 w-12 text-muted-foreground mb-4" />
+        <h3 className="text-xl font-medium mb-2">Erro ao carregar o mapa</h3>
+        <p className="text-muted-foreground text-center max-w-md">
+          {error}
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-lg overflow-hidden border border-border h-[600px] relative">
+      <div ref={mapContainerRef} className="h-full w-full" />
+    </div>
+  )
 }

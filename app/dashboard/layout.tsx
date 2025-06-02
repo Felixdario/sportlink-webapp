@@ -3,11 +3,11 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import Link from "next/link"
-import { Trophy, Menu, Home, MapPin, Calendar, Users, User, LogOut, Settings } from "lucide-react"
+import { Trophy, Menu, Home, MapPin, Calendar, Users, User, LogOut, Settings, MessageSquare } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -18,12 +18,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userName, setUserName] = useState("")
   const [isMounted, setIsMounted] = useState(false)
+  const [unreadMessages, setUnreadMessages] = useState(4)
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     setIsMounted(true)
@@ -51,7 +54,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b">
-        <div className="container flex justify-between items-center h-[10px]">
+        <div className="container flex justify-between items-center h-16">
           <div className="flex items-center">
             <Image src="/logo.png" alt="SportLink" width={140} height={120} />
           </div>
@@ -71,7 +74,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="flex items-center justify-between py-4">
                     <div className="flex items-center">
                       <Trophy className="h-6 w-6 text-primary-sportlink mr-2" />
-                      <span className="font-bold text-primary-sportlink">SportLink</span>
+                      <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary-sportlink to-rose-500">
+                        SportLink
+                      </span>
                     </div>
                     <ThemeToggle />
                   </div>
@@ -90,41 +95,82 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
                   </div>
                   <nav className="flex flex-col gap-2 flex-1 py-4">
-                    <Link href="/dashboard" className="flex items-center gap-2 px-4 py-2 rounded-md hover:bg-muted">
+                    <Link
+                      href="/dashboard"
+                      className={`flex items-center gap-2 px-4 py-2 rounded-md ${
+                        pathname === "/dashboard"
+                          ? "bg-gradient-to-r from-primary-sportlink/20 to-rose-500/20 text-primary-sportlink"
+                          : "hover:bg-muted"
+                      }`}
+                    >
                       <Home className="h-5 w-5" />
                       <span>Início</span>
                     </Link>
                     <Link
                       href="/dashboard/quadras"
-                      className="flex items-center gap-2 px-4 py-2 rounded-md hover:bg-muted"
+                      className={`flex items-center gap-2 px-4 py-2 rounded-md ${
+                        pathname === "/dashboard/quadras"
+                          ? "bg-gradient-to-r from-primary-sportlink/20 to-rose-500/20 text-primary-sportlink"
+                          : "hover:bg-muted"
+                      }`}
                     >
                       <MapPin className="h-5 w-5" />
                       <span>Quadras</span>
                     </Link>
                     <Link
                       href="/dashboard/competicoes"
-                      className="flex items-center gap-2 px-4 py-2 rounded-md hover:bg-muted"
+                      className={`flex items-center gap-2 px-4 py-2 rounded-md ${
+                        pathname === "/dashboard/competicoes"
+                          ? "bg-gradient-to-r from-primary-sportlink/20 to-rose-500/20 text-primary-sportlink"
+                          : "hover:bg-muted"
+                      }`}
                     >
                       <Calendar className="h-5 w-5" />
                       <span>Competições</span>
                     </Link>
                     <Link
                       href="/dashboard/atletas"
-                      className="flex items-center gap-2 px-4 py-2 rounded-md hover:bg-muted"
+                      className={`flex items-center gap-2 px-4 py-2 rounded-md ${
+                        pathname === "/dashboard/atletas"
+                          ? "bg-gradient-to-r from-primary-sportlink/20 to-rose-500/20 text-primary-sportlink"
+                          : "hover:bg-muted"
+                      }`}
                     >
                       <Users className="h-5 w-5" />
                       <span>Atletas</span>
                     </Link>
                     <Link
+                      href="/dashboard/mensagens"
+                      className={`flex items-center gap-2 px-4 py-2 rounded-md ${
+                        pathname === "/dashboard/mensagens"
+                          ? "bg-gradient-to-r from-primary-sportlink/20 to-rose-500/20 text-primary-sportlink"
+                          : "hover:bg-muted"
+                      }`}
+                    >
+                      <MessageSquare className="h-5 w-5" />
+                      <span>Mensagens</span>
+                      {unreadMessages > 0 && (
+                        <Badge className="ml-auto bg-primary-sportlink text-white">{unreadMessages}</Badge>
+                      )}
+                    </Link>
+                    <Link
                       href="/dashboard/perfil"
-                      className="flex items-center gap-2 px-4 py-2 rounded-md hover:bg-muted"
+                      className={`flex items-center gap-2 px-4 py-2 rounded-md ${
+                        pathname === "/dashboard/perfil"
+                          ? "bg-gradient-to-r from-primary-sportlink/20 to-rose-500/20 text-primary-sportlink"
+                          : "hover:bg-muted"
+                      }`}
                     >
                       <User className="h-5 w-5" />
                       <span>Meu Perfil</span>
                     </Link>
                     <Link
                       href="/dashboard/configuracoes"
-                      className="flex items-center gap-2 px-4 py-2 rounded-md hover:bg-muted"
+                      className={`flex items-center gap-2 px-4 py-2 rounded-md ${
+                        pathname === "/dashboard/configuracoes"
+                          ? "bg-gradient-to-r from-primary-sportlink/20 to-rose-500/20 text-primary-sportlink"
+                          : "hover:bg-muted"
+                      }`}
                     >
                       <Settings className="h-5 w-5" />
                       <span>Configurações</span>
@@ -148,17 +194,50 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-6">
             <nav className="flex items-center gap-6">
-              <Link href="/dashboard" className="text-foreground hover:text-primary-sportlink">
+              <Link
+                href="/dashboard"
+                className={`text-foreground hover:text-primary-sportlink transition-colors ${
+                  pathname === "/dashboard" ? "text-primary-sportlink font-medium" : ""
+                }`}
+              >
                 Início
               </Link>
-              <Link href="/dashboard/quadras" className="text-foreground hover:text-primary-sportlink">
+              <Link
+                href="/dashboard/quadras"
+                className={`text-foreground hover:text-primary-sportlink transition-colors ${
+                  pathname === "/dashboard/quadras" ? "text-primary-sportlink font-medium" : ""
+                }`}
+              >
                 Quadras
               </Link>
-              <Link href="/dashboard/competicoes" className="text-foreground hover:text-primary-sportlink">
+              <Link
+                href="/dashboard/competicoes"
+                className={`text-foreground hover:text-primary-sportlink transition-colors ${
+                  pathname === "/dashboard/competicoes" ? "text-primary-sportlink font-medium" : ""
+                }`}
+              >
                 Competições
               </Link>
-              <Link href="/dashboard/atletas" className="text-foreground hover:text-primary-sportlink">
+              <Link
+                href="/dashboard/atletas"
+                className={`text-foreground hover:text-primary-sportlink transition-colors ${
+                  pathname === "/dashboard/atletas" ? "text-primary-sportlink font-medium" : ""
+                }`}
+              >
                 Atletas
+              </Link>
+              <Link
+                href="/dashboard/mensagens"
+                className={`text-foreground hover:text-primary-sportlink transition-colors relative ${
+                  pathname === "/dashboard/mensagens" ? "text-primary-sportlink font-medium" : ""
+                }`}
+              >
+                Mensagens
+                {unreadMessages > 0 && (
+                  <Badge className="absolute -top-2 -right-2 h-5 min-w-5 p-0 flex items-center justify-center bg-primary-sportlink text-white">
+                    {unreadMessages}
+                  </Badge>
+                )}
               </Link>
             </nav>
             <div className="flex items-center gap-4">
