@@ -12,7 +12,7 @@ import Link from "next/link"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Image from "next/image"
-import logo from "@/public/logo.png"
+
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -90,7 +90,7 @@ export default function ForgotPasswordPage() {
           <div className="text-center mb-8">
             <Link href="/" className="inline-block">
               <div className="flex items-center justify-center">
-                <Image src={logo} alt="SportLink" width={260} height={120} />
+                <Image src="/Logo.png" alt="SportLink" width={260} height={120} />
               </div>
             </Link>
             <p className="mt-2 text-muted-foreground">Recupere o acesso à sua conta</p>

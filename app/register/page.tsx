@@ -11,7 +11,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Eye, EyeOff, AlertCircle, Loader2, Check, X, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import logo from "@/public/logo.png"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -131,7 +130,7 @@ export default function RegisterPage() {
         <div className="text-center">
           <Link href="/" className="inline-block">
             <div className="flex items-center justify-center">
-              <Image src={logo} alt="SportLink" width={260} height={120} />
+              <Image src="/Logo.png" alt="SportLink" width={260} height={120} />
             </div>
           </Link>
         </div>

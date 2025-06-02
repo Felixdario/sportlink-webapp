@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
-import logo from "@/public/logo.png"
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userName, setUserName] = useState("")
@@ -57,7 +56,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <header className="border-b">
         <div className="container flex justify-between items-center h-16">
           <div className="flex items-center">
-            <Image src={logo} alt="SportLink" width={140} height={120} />
+            <Image src="/Logo.png" alt="SportLink" width={140} height={120} />
           </div>
 
           {/* Mobile Menu */}

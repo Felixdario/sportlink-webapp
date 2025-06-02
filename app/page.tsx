@@ -5,14 +5,14 @@ import { MapPin, Users, Calendar, Trophy, ArrowRight, Star, CheckCircle, Chevron
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Image from "next/image"
-import logo from "@/public/logo.png"
+
 export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b sticky top-0 z-50 bg-background/80 backdrop-blur-md h-20">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center h-full">
           <div className="flex items-center h-full">
-            <Image src={logo} alt="Logo" className="w-44" width={206} height={64} priority />
+            <Image src="/Logo.png" alt="Logo" className="w-44" width={206} height={64} priority />
           </div>
           <div className="flex items-center gap-4">
             <nav className="hidden md:flex items-center gap-6">
