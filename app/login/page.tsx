@@ -209,16 +209,6 @@ export default function LoginPage() {
                     )}
                   </Button>
                 </form>
-
-                <div className="mt-4 text-center text-sm p-3 bg-muted/50 rounded-lg">
-                  <p className="font-medium mb-1">Credenciais de teste:</p>
-                  <div className="grid grid-cols-2 gap-2 text-muted-foreground">
-                    <div>Email:</div>
-                    <div className="font-mono">teste@exemplo.com</div>
-                    <div>Senha:</div>
-                    <div className="font-mono">senha123</div>
-                  </div>
-                </div>
               </CardContent>
               <CardFooter className="flex flex-col space-y-4">
                 <div className="text-center text-sm">
