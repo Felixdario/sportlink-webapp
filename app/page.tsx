@@ -402,7 +402,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center mb-4">
-                <img src="/logo.png" alt="Logo" className="w-44 h-32" />
+                <img src="/Logo.png" alt="Logo" className="w-44 h-32" />
               </div>
               <p className="text-muted-foreground mb-4">Conectando atletas e criando competições em um só lugar.</p>
               <div className="flex space-x-4">
