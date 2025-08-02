@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, Upload, X, Save } from "lucide-react"
+import { MapPin, Upload, X, Save, ArrowLeft } from "lucide-react"
 import { addCourt } from "@/lib/data/courts"
 
 const availableSports = [
@@ -56,9 +56,14 @@ export default function NewCourtPage() {
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+    // Limpar erro do campo
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }))
+    }
   }
 
   const handleSportToggle = (sport: string) => {
@@ -77,13 +82,45 @@ export default function NewCourtPage() {
     }))
   }
 
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Nome da quadra é obrigatório"
+    }
+
+    if (!formData.address.trim()) {
+      newErrors.address = "Endereço é obrigatório"
+    }
+
+    if (!formData.neighborhood.trim()) {
+      newErrors.neighborhood = "Bairro é obrigatório"
+    }
+
+    if (!formData.price || Number.parseFloat(formData.price) <= 0) {
+      newErrors.price = "Preço deve ser maior que zero"
+    }
+
+    if (formData.sports.length === 0) {
+      newErrors.sports = "Selecione pelo menos um esporte"
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!validateForm()) {
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
       // Simular delay de API
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await new Promise((resolve) => setTimeout(resolve, 1500))
 
       const newCourt = addCourt({
         name: formData.name,
@@ -106,20 +143,32 @@ export default function NewCourtPage() {
       router.push("/organizer/courts")
     } catch (error) {
       console.error("Erro ao cadastrar quadra:", error)
+      setErrors({ general: "Erro ao cadastrar quadra. Tente novamente." })
     } finally {
       setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="p-6">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Cadastrar Nova Quadra</h1>
-          <p className="text-muted-foreground">Preencha as informações da sua quadra esportiva</p>
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <Button variant="ghost" size="sm" onClick={() => router.back()} className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Voltar
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Cadastrar Nova Quadra</h1>
+            <p className="text-muted-foreground">Preencha as informações da sua quadra esportiva</p>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
+          {errors.general && (
+            <div className="p-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">{errors.general}</div>
+          )}
+
           {/* Informações Básicas */}
           <Card>
             <CardHeader>
@@ -135,8 +184,9 @@ export default function NewCourtPage() {
                     value={formData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
                     placeholder="Ex: Quadra Poliesportiva Central"
-                    required
+                    className={errors.name ? "border-red-500" : ""}
                   />
+                  {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name}</p>}
                 </div>
                 <div>
                   <Label htmlFor="price">Preço por Hora (R$) *</Label>
@@ -147,8 +197,9 @@ export default function NewCourtPage() {
                     value={formData.price}
                     onChange={(e) => handleInputChange("price", e.target.value)}
                     placeholder="80.00"
-                    required
+                    className={errors.price ? "border-red-500" : ""}
                   />
+                  {errors.price && <p className="text-sm text-red-600 mt-1">{errors.price}</p>}
                 </div>
               </div>
 
@@ -182,8 +233,9 @@ export default function NewCourtPage() {
                   value={formData.address}
                   onChange={(e) => handleInputChange("address", e.target.value)}
                   placeholder="Av. Principal, 123 - Centro"
-                  required
+                  className={errors.address ? "border-red-500" : ""}
                 />
+                {errors.address && <p className="text-sm text-red-600 mt-1">{errors.address}</p>}
               </div>
               <div>
                 <Label htmlFor="neighborhood">Bairro *</Label>
@@ -192,8 +244,9 @@ export default function NewCourtPage() {
                   value={formData.neighborhood}
                   onChange={(e) => handleInputChange("neighborhood", e.target.value)}
                   placeholder="Centro"
-                  required
+                  className={errors.neighborhood ? "border-red-500" : ""}
                 />
+                {errors.neighborhood && <p className="text-sm text-red-600 mt-1">{errors.neighborhood}</p>}
               </div>
             </CardContent>
           </Card>
@@ -201,7 +254,7 @@ export default function NewCourtPage() {
           {/* Esportes */}
           <Card>
             <CardHeader>
-              <CardTitle>Esportes Disponíveis</CardTitle>
+              <CardTitle>Esportes Disponíveis *</CardTitle>
               <CardDescription>Selecione os esportes que podem ser praticados na quadra</CardDescription>
             </CardHeader>
             <CardContent>
@@ -219,6 +272,7 @@ export default function NewCourtPage() {
                   </div>
                 ))}
               </div>
+              {errors.sports && <p className="text-sm text-red-600 mt-2">{errors.sports}</p>}
               {formData.sports.length > 0 && (
                 <div className="mt-4">
                   <p className="text-sm font-medium mb-2">Esportes selecionados:</p>
@@ -313,9 +367,7 @@ export default function NewCourtPage() {
             </Button>
             <Button
               type="submit"
-              disabled={
-                isSubmitting || !formData.name || !formData.address || !formData.neighborhood || !formData.price
-              }
+              disabled={isSubmitting}
               className="bg-gradient-to-r from-primary-sportlink to-rose-500 hover:from-primary-sportlink/90 hover:to-rose-500/90"
             >
               {isSubmitting ? (

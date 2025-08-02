@@ -18,22 +18,6 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import dynamic from "next/dynamic"
 
-// Importar o componente de mapa dinamicamente para evitar problemas de SSR
-const MapaQuadras = dynamic(() => import("@/components/mapa-quadras"), {
-  ssr: false,
-  loading: () => (
-    <div className="bg-muted rounded-lg overflow-hidden h-[500px] flex items-center justify-center">
-      <div className="text-center">
-        <div className="h-8 w-8 border-4 border-primary-sportlink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <h3 className="text-xl font-medium mb-2">Carregando mapa</h3>
-        <p className="text-muted-foreground max-w-md mx-auto">
-          Estamos carregando o mapa com as quadras próximas a você.
-        </p>
-      </div>
-    </div>
-  ),
-})
-
 export default function QuadrasPage() {
   const [mounted, setMounted] = useState(false)
   const [filtroEsporte, setFiltroEsporte] = useState("")
@@ -266,13 +250,6 @@ export default function QuadrasPage() {
           </Dialog>
         </div>
       </div>
-
-      <Tabs defaultValue="lista" value={activeTab} onValueChange={setActiveTab} className="mb-8">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="lista">Lista</TabsTrigger>
-          <TabsTrigger value="mapa">Mapa</TabsTrigger>
-        </TabsList>
-        <TabsContent value="lista" className="mt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {quadrasFiltradas.length > 0 ? (
               quadrasFiltradas.map((quadra) => (
@@ -358,11 +335,6 @@ export default function QuadrasPage() {
               </div>
             )}
           </div>
-        </TabsContent>
-        <TabsContent value="mapa">
-          <MapaQuadras quadras={quadrasFiltradas} key={`map-view-${activeTab}`} />
-        </TabsContent>
-      </Tabs>
     </div>
   )
 }

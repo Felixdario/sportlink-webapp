@@ -94,7 +94,7 @@ export default function RegisterPage() {
       await registerUser(payload)
       localStorage.setItem("isAuthenticated", "true")
       localStorage.setItem("userName", name)
-      router.push("/dashboard")
+      router.push("/user-type")
     } catch (err: any) {
       if (err?.response?.data?.detail) {
         setError(err.response.data.detail)
