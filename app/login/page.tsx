@@ -24,7 +24,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
   const router = useRouter()
-  const [userType, setUserType] = useState<"athlete" | "organizer">("athlete")
+  // Removido o estado fixo de userType
 
   useEffect(() => {
     setMounted(true)
@@ -67,14 +67,13 @@ export default function LoginPage() {
     try {
       const data = await loginUser({ email, senha: password })
       localStorage.setItem("isAuthenticated", "true")
-      localStorage.setItem("userType", userType)
+      localStorage.setItem("data", JSON.stringify(data))
       if (rememberMe) {
         localStorage.setItem("userEmail", email)
       } else {
         localStorage.removeItem("userEmail")
       }
-      // Redirecionar baseado no tipo de usuário
-      if (userType === "organizer") {
+      if (data.tipo === "dono_quadra") {
         router.push("/organizer/dashboard")
       } else {
         router.push("/dashboard")

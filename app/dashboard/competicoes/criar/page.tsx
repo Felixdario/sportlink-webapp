@@ -54,18 +54,25 @@ export default function CriarCompeticaoPage() {
   const [nome, setNome] = useState("")
   const [descricao, setDescricao] = useState("")
   const [esporte, setEsporte] = useState("")
+  const [categoria, setCategoria] = useState("")
+  const [formato, setFormato] = useState("")
   const [dataInicio, setDataInicio] = useState<Date>()
   const [dataFim, setDataFim] = useState<Date>()
+  const [dataLimiteInscricao, setDataLimiteInscricao] = useState<Date>()
   const [local, setLocal] = useState("")
   const [endereco, setEndereco] = useState("")
   const [latitude, setLatitude] = useState<number | null>(null)
   const [longitude, setLongitude] = useState<number | null>(null)
   const [vagas, setVagas] = useState("16")
+  const [minParticipantes, setMinParticipantes] = useState("8")
   const [premio, setPremio] = useState("")
   const [taxaInscricao, setTaxaInscricao] = useState("")
   const [regras, setRegras] = useState<string[]>([""])
+  const [requisitos, setRequisitos] = useState<string[]>([""])
   const [isPublica, setIsPublica] = useState(true)
   const [inscricoesAutomaticas, setInscricoesAutomaticas] = useState(true)
+  const [permitirEquipes, setPermitirEquipes] = useState(false)
+  const [tamanhoEquipe, setTamanhoEquipe] = useState("5")
 
   useEffect(() => {
     setMounted(true)
@@ -87,6 +94,22 @@ export default function CriarCompeticaoPage() {
     setRegras(novasRegras)
   }
 
+  const adicionarRequisito = () => {
+    setRequisitos([...requisitos, ""])
+  }
+
+  const removerRequisito = (index: number) => {
+    const novosRequisitos = [...requisitos]
+    novosRequisitos.splice(index, 1)
+    setRequisitos(novosRequisitos)
+  }
+
+  const atualizarRequisito = (index: number, valor: string) => {
+    const novosRequisitos = [...requisitos]
+    novosRequisitos[index] = valor
+    setRequisitos(novosRequisitos)
+  }
+
   const handleSelecionarLocalizacao = (lat: number, lng: number, endereco: string) => {
     setLatitude(lat)
     setLongitude(lng)
@@ -105,8 +128,28 @@ export default function CriarCompeticaoPage() {
       return false
     }
 
+    if (!categoria) {
+      setError("Selecione uma categoria para a competição")
+      return false
+    }
+
+    if (!formato) {
+      setError("Selecione o formato da competição")
+      return false
+    }
+
     if (!dataInicio) {
       setError("A data de início é obrigatória")
+      return false
+    }
+
+    if (!dataLimiteInscricao) {
+      setError("A data limite para inscrições é obrigatória")
+      return false
+    }
+
+    if (dataLimiteInscricao >= dataInicio) {
+      setError("A data limite para inscrições deve ser anterior à data de início")
       return false
     }
 
@@ -125,6 +168,16 @@ export default function CriarCompeticaoPage() {
       return false
     }
 
+    if (!minParticipantes || Number.parseInt(minParticipantes) <= 0) {
+      setError("O número mínimo de participantes deve ser maior que zero")
+      return false
+    }
+
+    if (Number.parseInt(minParticipantes) > Number.parseInt(vagas)) {
+      setError("O número mínimo de participantes não pode ser maior que o número de vagas")
+      return false
+    }
+
     return true
   }
 
@@ -139,11 +192,46 @@ export default function CriarCompeticaoPage() {
     setIsLoading(true)
 
     try {
-      // Simulando envio para API
+      // Simulando criação da competição
+      const novaCompeticao = {
+        id: Date.now(),
+        nome,
+        descricao,
+        esporte,
+        categoria,
+        formato,
+        dataInicio: dataInicio?.toISOString(),
+        dataFim: dataFim?.toISOString(),
+        dataLimiteInscricao: dataLimiteInscricao?.toISOString(),
+        local,
+        endereco,
+        latitude,
+        longitude,
+        vagas: Number.parseInt(vagas),
+        minParticipantes: Number.parseInt(minParticipantes),
+        participantes: 0,
+        premio,
+        taxaInscricao,
+        regras: regras.filter((r) => r.trim()),
+        requisitos: requisitos.filter((r) => r.trim()),
+        isPublica,
+        inscricoesAutomaticas,
+        permitirEquipes,
+        tamanhoEquipe: permitirEquipes ? Number.parseInt(tamanhoEquipe) : null,
+        status: "inscricoes",
+        organizador: "Usuário Atual",
+        criadoEm: new Date().toISOString(),
+      }
+
+      // Salvar no localStorage (simulando API)
+      const competicoes = JSON.parse(localStorage.getItem("competicoes") || "[]")
+      competicoes.push(novaCompeticao)
+      localStorage.setItem("competicoes", JSON.stringify(competicoes))
+
       await new Promise((resolve) => setTimeout(resolve, 1500))
 
-      // Redirecionar para a página de competições
-      router.push("/dashboard/competicoes")
+      // Redirecionar para a página da competição criada
+      router.push(`/dashboard/competicoes/${novaCompeticao.id}`)
     } catch (err) {
       setError("Ocorreu um erro ao criar a competição. Tente novamente.")
     } finally {
@@ -201,7 +289,7 @@ export default function CriarCompeticaoPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="esporte">Esporte *</Label>
                     <Select value={esporte} onValueChange={setEsporte} disabled={isLoading}>
@@ -224,6 +312,44 @@ export default function CriarCompeticaoPage() {
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="categoria">Categoria *</Label>
+                    <Select value={categoria} onValueChange={setCategoria} disabled={isLoading}>
+                      <SelectTrigger id="categoria">
+                        <SelectValue placeholder="Selecione a categoria" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="amador">Amador</SelectItem>
+                        <SelectItem value="semi-profissional">Semi-profissional</SelectItem>
+                        <SelectItem value="profissional">Profissional</SelectItem>
+                        <SelectItem value="juvenil">Juvenil</SelectItem>
+                        <SelectItem value="master">Master</SelectItem>
+                        <SelectItem value="feminino">Feminino</SelectItem>
+                        <SelectItem value="masculino">Masculino</SelectItem>
+                        <SelectItem value="misto">Misto</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="formato">Formato *</Label>
+                    <Select value={formato} onValueChange={setFormato} disabled={isLoading}>
+                      <SelectTrigger id="formato">
+                        <SelectValue placeholder="Formato da competição" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="eliminacao-simples">Eliminação Simples</SelectItem>
+                        <SelectItem value="eliminacao-dupla">Eliminação Dupla</SelectItem>
+                        <SelectItem value="pontos-corridos">Pontos Corridos</SelectItem>
+                        <SelectItem value="grupos-eliminatorias">Grupos + Eliminatórias</SelectItem>
+                        <SelectItem value="suico">Sistema Suíço</SelectItem>
+                        <SelectItem value="round-robin">Round Robin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
                     <Label htmlFor="vagas">Número de vagas *</Label>
                     <Input
                       id="vagas"
@@ -234,9 +360,48 @@ export default function CriarCompeticaoPage() {
                       disabled={isLoading}
                     />
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="minParticipantes">Mínimo de participantes *</Label>
+                    <Input
+                      id="minParticipantes"
+                      type="number"
+                      min="2"
+                      value={minParticipantes}
+                      onChange={(e) => setMinParticipantes(e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="permitirEquipes"
+                      checked={permitirEquipes}
+                      onCheckedChange={setPermitirEquipes}
+                      disabled={isLoading}
+                    />
+                    <Label htmlFor="permitirEquipes">Permitir equipes</Label>
+                  </div>
+
+                  {permitirEquipes && (
+                    <div className="space-y-2">
+                      <Label htmlFor="tamanhoEquipe">Tamanho da equipe</Label>
+                      <Input
+                        id="tamanhoEquipe"
+                        type="number"
+                        min="2"
+                        max="11"
+                        value={tamanhoEquipe}
+                        onChange={(e) => setTamanhoEquipe(e.target.value)}
+                        disabled={isLoading}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Data de início *</Label>
                     <Popover>
@@ -281,6 +446,36 @@ export default function CriarCompeticaoPage() {
                           selected={dataFim}
                           onSelect={setDataFim}
                           disabled={(date) => (dataInicio ? date < dataInicio : false)}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Limite para inscrições *</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !dataLimiteInscricao && "text-muted-foreground",
+                          )}
+                          disabled={isLoading}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {dataLimiteInscricao
+                            ? format(dataLimiteInscricao, "PPP", { locale: ptBR })
+                            : "Selecione uma data"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={dataLimiteInscricao}
+                          onSelect={setDataLimiteInscricao}
+                          disabled={(date) => (dataInicio ? date >= dataInicio : false)}
                           initialFocus
                         />
                       </PopoverContent>
@@ -354,8 +549,8 @@ export default function CriarCompeticaoPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Regras e premiação</CardTitle>
-                <CardDescription>Defina as regras e premiações da competição</CardDescription>
+                <CardTitle>Regras e requisitos</CardTitle>
+                <CardDescription>Defina as regras e requisitos para participação</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -373,7 +568,7 @@ export default function CriarCompeticaoPage() {
                   <Label htmlFor="taxa">Taxa de inscrição</Label>
                   <Input
                     id="taxa"
-                    placeholder="Ex: R$ 50,00 por equipe"
+                    placeholder="Ex: R$ 50,00 por participante"
                     value={taxaInscricao}
                     onChange={(e) => setTaxaInscricao(e.target.value)}
                     disabled={isLoading}
@@ -402,6 +597,37 @@ export default function CriarCompeticaoPage() {
                           variant="ghost"
                           size="icon"
                           onClick={() => removerRegra(index)}
+                          disabled={isLoading}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>Requisitos para participação</Label>
+                    <Button type="button" variant="outline" size="sm" onClick={adicionarRequisito} disabled={isLoading}>
+                      <Plus className="h-4 w-4 mr-1" /> Adicionar requisito
+                    </Button>
+                  </div>
+
+                  {requisitos.map((requisito, index) => (
+                    <div key={index} className="flex gap-2">
+                      <Input
+                        placeholder={`Requisito ${index + 1}`}
+                        value={requisito}
+                        onChange={(e) => atualizarRequisito(index, e.target.value)}
+                        disabled={isLoading}
+                      />
+                      {requisitos.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removerRequisito(index)}
                           disabled={isLoading}
                         >
                           <Minus className="h-4 w-4" />
@@ -488,7 +714,7 @@ export default function CriarCompeticaoPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full"
+                  className="w-full bg-transparent"
                   onClick={() => router.push("/dashboard/competicoes")}
                   disabled={isLoading}
                 >

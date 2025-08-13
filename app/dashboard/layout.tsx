@@ -107,28 +107,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <span>Início</span>
                     </Link>
                     <Link
-                      href="/dashboard/quadras"
-                      className={`flex items-center gap-2 px-4 py-2 rounded-md ${
-                        pathname === "/dashboard/quadras"
-                          ? "bg-gradient-to-r from-primary-sportlink/20 to-rose-500/20 text-primary-sportlink"
-                          : "hover:bg-muted"
-                      }`}
-                    >
-                      <MapPin className="h-5 w-5" />
-                      <span>Quadras</span>
-                    </Link>
-                    <Link
-                      href="/dashboard/competicoes"
-                      className={`flex items-center gap-2 px-4 py-2 rounded-md ${
-                        pathname === "/dashboard/competicoes"
-                          ? "bg-gradient-to-r from-primary-sportlink/20 to-rose-500/20 text-primary-sportlink"
-                          : "hover:bg-muted"
-                      }`}
-                    >
-                      <Calendar className="h-5 w-5" />
-                      <span>Competições</span>
-                    </Link>
-                    <Link
                       href="/dashboard/atletas"
                       className={`flex items-center gap-2 px-4 py-2 rounded-md ${
                         pathname === "/dashboard/atletas"
@@ -203,14 +181,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 Início
               </Link>
               <Link
-                href="/dashboard/quadras"
-                className={`text-foreground hover:text-primary-sportlink transition-colors ${
-                  pathname === "/dashboard/quadras" ? "text-primary-sportlink font-medium" : ""
-                }`}
-              >
-                Quadras
-              </Link>
-              <Link
                 href="/dashboard/competicoes"
                 className={`text-foreground hover:text-primary-sportlink transition-colors ${
                   pathname === "/dashboard/competicoes" ? "text-primary-sportlink font-medium" : ""
@@ -225,19 +195,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 }`}
               >
                 Atletas
-              </Link>
-              <Link
-                href="/dashboard/mensagens"
-                className={`text-foreground hover:text-primary-sportlink transition-colors relative ${
-                  pathname === "/dashboard/mensagens" ? "text-primary-sportlink font-medium" : ""
-                }`}
-              >
-                Mensagens
-                {unreadMessages > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 min-w-5 p-0 flex items-center justify-center bg-primary-sportlink text-white">
-                    {unreadMessages}
-                  </Badge>
-                )}
               </Link>
             </nav>
             <div className="flex items-center gap-4">

@@ -52,12 +52,20 @@ export default function OrganizerLayout({
     setMounted(true)
     // Verificar se o usuário está autenticado e é organizador
     const isAuthenticated = localStorage.getItem("isAuthenticated")
-    const userType = localStorage.getItem("userType")
+    const data = localStorage.getItem("data")
 
     if (!isAuthenticated) {
       router.push("/login")
-    } else if (userType !== "organizer") {
-      router.push("/user-type")
+    } else {
+      let parsedData: { tipo?: string } | null = null
+      try {
+        parsedData = data ? JSON.parse(data) : null
+      } catch (e) {
+        parsedData = null
+      }
+      if (!parsedData || parsedData.tipo !== "atleta") {
+        router.push("/user-type")
+      }
     }
   }, [router])
 
@@ -185,7 +193,7 @@ export default function OrganizerLayout({
         <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b bg-background/80 backdrop-blur-sm px-4 sm:gap-x-6 sm:px-6 lg:px-8 hidden md:flex">
           <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
             <div className="flex flex-1">
-              <Image src="/Logo.png" alt="SportLink" width={120} height={180} /></div>
+              <Image src="/Logo.png" alt="SportLink" width={110} height={180} /></div>
             <div className="flex items-center gap-x-4 lg:gap-x-6">
               <ThemeToggle />
             </div>
