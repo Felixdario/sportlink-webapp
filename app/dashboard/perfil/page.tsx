@@ -102,8 +102,7 @@ export default function PerfilPage() {
           <div className="flex flex-col md:flex-row items-start md:items-end -mt-16 mb-4">
             <div className="relative">
               <Avatar className="w-32 h-32 border-4 border-background shadow-md">
-                <AvatarImage src={usuario.avatar || "/placeholder.svg"} alt={usuario.nome} />
-                <AvatarFallback className="bg-primary-sportlink/10 text-primary-sportlink text-4xl">
+                <AvatarFallback>
                   {usuario.nome
                     .split(" ")
                     .map((n) => n[0])

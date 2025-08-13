@@ -187,11 +187,6 @@ export default function OrganizerDashboard() {
                     key={court.id}
                     className="flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                   >
-                    <img
-                      src={court.images[0] || "/placeholder.svg?height=48&width=48"}
-                      alt={court.name}
-                      className="w-12 h-12 rounded-lg object-cover"
-                    />
                     <div className="flex-1">
                       <h4 className="font-medium">{court.name}</h4>
                       <p className="text-sm text-muted-foreground">{court.neighborhood}</p>
@@ -249,7 +244,7 @@ export default function OrganizerDashboard() {
           <CardDescription>Acesse rapidamente as funcionalidades mais usadas</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Link href="/organizer/courts/new">
               <Button variant="outline" className="w-full h-20 flex flex-col gap-2 bg-transparent">
                 <Plus className="h-6 w-6" />
@@ -260,12 +255,6 @@ export default function OrganizerDashboard() {
               <Button variant="outline" className="w-full h-20 flex flex-col gap-2 bg-transparent">
                 <Calendar className="h-6 w-6" />
                 <span>Ver Agenda</span>
-              </Button>
-            </Link>
-            <Link href="/organizer/reports">
-              <Button variant="outline" className="w-full h-20 flex flex-col gap-2 bg-transparent">
-                <DollarSign className="h-6 w-6" />
-                <span>Relatórios</span>
               </Button>
             </Link>
             <Link href="/organizer/courts">

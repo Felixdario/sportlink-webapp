@@ -643,23 +643,6 @@ export default function CriarCompeticaoPage() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Imagem da competição</CardTitle>
-                <CardDescription>Adicione uma imagem para sua competição</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="border border-dashed rounded-md p-6 flex flex-col items-center justify-center text-center">
-                  <Upload className="h-10 w-10 text-muted-foreground mb-4" />
-                  <p className="text-sm font-medium mb-1">Arraste uma imagem ou clique para fazer upload</p>
-                  <p className="text-xs text-muted-foreground mb-4">PNG, JPG ou JPEG (máx. 5MB)</p>
-                  <Button variant="outline" size="sm" type="button" disabled={isLoading}>
-                    Selecionar arquivo
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
                 <CardTitle>Configurações</CardTitle>
                 <CardDescription>Defina as configurações da competição</CardDescription>
               </CardHeader>

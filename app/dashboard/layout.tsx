@@ -142,17 +142,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <User className="h-5 w-5" />
                       <span>Meu Perfil</span>
                     </Link>
-                    <Link
-                      href="/dashboard/configuracoes"
-                      className={`flex items-center gap-2 px-4 py-2 rounded-md ${
-                        pathname === "/dashboard/configuracoes"
-                          ? "bg-gradient-to-r from-primary-sportlink/20 to-rose-500/20 text-primary-sportlink"
-                          : "hover:bg-muted"
-                      }`}
-                    >
-                      <Settings className="h-5 w-5" />
-                      <span>Configurações</span>
-                    </Link>
                   </nav>
                   <div className="py-4 border-t">
                     <Button
@@ -202,10 +191,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center gap-2 p-1">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src="/placeholder.svg" alt={userName} />
-                      <AvatarFallback className="bg-primary-sportlink/10 text-primary-sportlink">
-                        {userName.substring(0, 2).toUpperCase()}
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback>
+                        {userName
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
                       </AvatarFallback>
                     </Avatar>
                     <span className="hidden sm:inline">{userName}</span>
@@ -218,12 +209,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <Link href="/dashboard/perfil">
                       <User className="mr-2 h-4 w-4" />
                       <span>Perfil</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/configuracoes">
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Configurações</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

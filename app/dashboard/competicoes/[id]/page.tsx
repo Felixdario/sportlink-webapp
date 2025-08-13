@@ -442,7 +442,6 @@ export default function CompeticaoDetalhePage() {
                     {participantes.map((participante) => (
                       <div key={participante.id} className="flex items-center gap-3 p-3 border rounded-lg">
                         <Avatar>
-                          <AvatarImage src={participante.avatar || "/placeholder.svg"} />
                           <AvatarFallback>
                             {participante.nome
                               .split(" ")

@@ -26,16 +26,6 @@ const navigation = [
     href: "/organizer/schedule",
     icon: Calendar,
   },
-  {
-    name: "Relatórios",
-    href: "/organizer/reports",
-    icon: BarChart3,
-  },
-  {
-    name: "Configurações",
-    href: "/organizer/settings",
-    icon: Settings,
-  },
 ]
 
 export default function OrganizerLayout({

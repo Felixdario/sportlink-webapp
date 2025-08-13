@@ -361,8 +361,7 @@ export default function AtletasPage() {
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar className="h-10 w-10">
-                              <AvatarImage src={atleta.avatar || "/placeholder.svg"} alt={atleta.nome} />
-                              <AvatarFallback className="bg-primary-sportlink/10 text-primary-sportlink">
+                              <AvatarFallback>
                                 {atleta.nome
                                   .split(" ")
                                   .map((n) => n[0])
@@ -413,10 +412,6 @@ export default function AtletasPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button size="sm" variant="outline" className="h-8 w-8 p-0">
-                              <MessageSquare className="h-4 w-4" />
-                              <span className="sr-only">Mensagem</span>
-                            </Button>
                             <Button size="sm" className="h-8">
                               Ver perfil
                             </Button>
@@ -464,8 +459,7 @@ export default function AtletasPage() {
                     <div className="flex items-start gap-4">
                       <div className="relative">
                         <Avatar className="h-16 w-16">
-                          <AvatarImage src={atleta.avatar || "/placeholder.svg"} alt={atleta.nome} />
-                          <AvatarFallback className="bg-primary-sportlink/10 text-primary-sportlink text-xl">
+                          <AvatarFallback>
                             {atleta.nome
                               .split(" ")
                               .map((n) => n[0])
