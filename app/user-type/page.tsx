@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Trophy, Building2, Users, MapPin, Calendar, BarChart3, MessageSquare, Star } from "lucide-react"
-
+import Image from "next/image"
 export default function UserTypePage() {
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
@@ -37,11 +37,8 @@ export default function UserTypePage() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary-sportlink/5 flex items-center justify-center p-4">
       <div className="w-full max-w-4xl">
         <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <Trophy className="h-12 w-12 text-primary-sportlink" />
-            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary-sportlink to-rose-500">
-              SportLink
-            </h1>
+          <div className="flex items-center justify-center gap-2">
+              <Image src="/Logo.png" alt="SportLink" width={260} height={120} />
           </div>
           <h2 className="text-3xl font-bold mb-4">Bem-vindo ao SportLink!</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -53,7 +50,7 @@ export default function UserTypePage() {
           {/* Atleta */}
           <Card className="relative overflow-hidden border-2 hover:border-primary-sportlink/50 transition-all duration-300 hover:shadow-xl group cursor-pointer">
             <div className="absolute inset-0 bg-gradient-to-br from-primary-sportlink/5 to-rose-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <CardHeader className="relative z-10 text-center pb-4">
+            <CardHeader className="relative z-10 text-center">
               <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-primary-sportlink to-rose-500 rounded-full flex items-center justify-center">
                 <Users className="h-10 w-10 text-white" />
               </div>

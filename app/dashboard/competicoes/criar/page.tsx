@@ -9,7 +9,8 @@ import { createCompeticao } from "@/lib/api"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { CalendarIcon, Trophy, Upload, MapPin, Plus, Minus, AlertCircle, Loader2 } from "lucide-react"
+import { CalendarIcon, Trophy, Upload, MapPin, Plus, Minus, AlertCircle, Loader2, Search, Check } from "lucide-react"
+import { getCourts } from "@/lib/data/courts"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar } from "@/components/ui/calendar"
@@ -25,26 +26,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-// Importações corrigidas do date-fns
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import format from "date-fns/format"
 import ptBR from "date-fns/locale/pt-BR"
 import { cn } from "@/lib/utils"
 import dynamic from "next/dynamic"
-
-// Importar os componentes do Google Maps dinamicamente
-// Usando os componentes reais do Google Maps
-const GoogleMapaSeletor = dynamic(() => import("@/components/google-mapa-seletor").then(mod => mod.default), {
-  ssr: false,
-  loading: () => (
-    <div className="bg-muted rounded-lg overflow-hidden h-[400px] flex items-center justify-center">
-      <div className="text-center">
-        <div className="h-8 w-8 border-4 border-primary-sportlink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <h3 className="text-xl font-medium mb-2">Carregando mapa</h3>
-        <p className="text-muted-foreground max-w-md mx-auto">Estamos carregando o mapa para seleção de localização.</p>
-      </div>
-    </div>
-  ),
-})
 
 // Componente para exibir a localização no mapa
 const GoogleMapaExibicao = dynamic(() => import("@/components/google-mapa-exibicao").then(mod => mod.default), {
@@ -64,9 +50,9 @@ export default function CriarCompeticaoPage() {
   const [mounted, setMounted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isMapaAberto, setIsMapaAberto] = useState(false)
-
-  // Dados do formulário
+  const [isQuadraDialogAberto, setIsQuadraDialogAberto] = useState(false)
+  const [quadrasDisponiveis, setQuadrasDisponiveis] = useState<any[]>([])
+  const [quadraSelecionada, setQuadraSelecionada] = useState<any | null>(null)
   const [nome, setNome] = useState("")
   const [descricao, setDescricao] = useState("")
   const [esporte, setEsporte] = useState("")
@@ -92,7 +78,24 @@ export default function CriarCompeticaoPage() {
 
   useEffect(() => {
     setMounted(true)
+    // Carregar quadras do organizador
+    const organizerId = "org1" // Em produção, viria do contexto de autenticação
+    const quadras = getCourts(organizerId)
+    setQuadrasDisponiveis(quadras)
   }, [])
+
+  const handleSelecionarQuadra = (quadra: any) => {
+    setQuadraSelecionada(quadra)
+    setLocal(quadra.name)
+    setEndereco(quadra.address)
+    setLatitude(quadra.latitude)
+    setLongitude(quadra.longitude)
+    setIsQuadraDialogAberto(false)
+  }
+
+  const abrirSeletorQuadras = () => {
+    setIsQuadraDialogAberto(true)
+  }
 
   const adicionarRegra = () => {
     setRegras([...regras, ""])
@@ -124,32 +127,6 @@ export default function CriarCompeticaoPage() {
     const novosRequisitos = [...requisitos]
     novosRequisitos[index] = valor
     setRequisitos(novosRequisitos)
-  }
-
-  const handleSelecionarLocalizacao = (lat: number, lng: number, endereco: string) => {
-    // Registrar que a localização foi selecionada
-    console.log(`Localização selecionada: ${endereco} (${lat}, ${lng})`);
-    
-    // Atualizar os estados com os dados da localização
-    setLatitude(lat);
-    setLongitude(lng);
-    if (endereco) setEndereco(endereco);
-    
-    // Aguardar o próximo ciclo de renderização para fechar o diálogo
-    requestAnimationFrame(() => {
-      // Fechar o diálogo
-      setIsMapaAberto(false);
-      console.log("Diálogo fechado após seleção de localização");
-      
-      // Aguardar um momento extra para garantir que os estados estejam atualizados
-      setTimeout(() => {
-        console.log("Estados atualizados após seleção:", {
-          latitude: lat,
-          longitude: lng,
-          endereco: endereco
-        });
-      }, 300);
-    });
   }
 
   const validarFormulario = () => {
@@ -564,148 +541,146 @@ export default function CriarCompeticaoPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Local</CardTitle>
-                <CardDescription>Informe onde a competição será realizada</CardDescription>
+                <CardDescription>Selecione uma das suas quadras cadastradas</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="local">Nome do local *</Label>
-                  <Input
-                    id="local"
-                    placeholder="Ex: Quadra Poliesportiva Central"
-                    value={local}
-                    onChange={(e) => setLocal(e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="endereco">Endereço completo *</Label>
-                  <div className="flex gap-2">
+                  <div className="relative">
                     <Input
-                      id="endereco"
-                      placeholder="Ex: Av. Principal, 123 - Centro"
-                      value={endereco}
-                      onChange={(e) => setEndereco(e.target.value)}
+                      id="local"
+                      placeholder="Selecione uma quadra cadastrada..."
+                      value={local}
+                      readOnly
+                      onClick={abrirSeletorQuadras}
+                      className="cursor-pointer"
                       disabled={isLoading}
                     />
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={async () => {
-                        if (endereco) {
-                          try {
-                            // Salvar o erro atual e mostrar mensagem de carregamento temporariamente
-                            setIsLoading(true);
-                            setError("Buscando localização...");
-                            
-                            console.log("Buscando endereço:", endereco);
-                            
-                            // Buscar coordenadas a partir do endereço
-                            const response = await fetch(
-                              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}`
-                            );
-                            const data = await response.json();
-                            console.log("Resposta da busca:", data);
-                            
-                            if (data && data.length > 0) {
-                              const { lat, lon, display_name } = data[0];
-                              setLatitude(Number.parseFloat(lat));
-                              setLongitude(Number.parseFloat(lon));
-                              setEndereco(display_name);
-                              setError(null);
-                              console.log(`Localização encontrada: ${display_name}`);
-                            } else {
-                              setError("Endereço não encontrado. Tente ser mais específico.");
-                            }
-                          } catch (error) {
-                            console.error("Erro ao buscar localização:", error);
-                            setError("Erro ao buscar localização. Tente novamente.");
-                          } finally {
-                            setIsLoading(false);
-                          }
-                        } else {
-                          setError("Digite um endereço para buscar a localização.");
-                        }
-                      }}
-                      disabled={isLoading || !endereco}
-                    >
-                      <MapPin className="h-4 w-4 mr-2" /> {isLoading ? "Buscando..." : "Buscar"}
-                    </Button>
+                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   </div>
-                  <p className="text-xs text-muted-foreground">Digite o endereço completo para buscar a localização ou selecione manualmente no mapa</p>
-                </div>
-
-                {/* Botão para abrir o seletor de mapa */}
-                <div 
-                  className="border border-dashed rounded-md p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => {
-                    console.log("Abrindo seletor de mapa do Google");
-                    setIsMapaAberto(true);
-                  }}
-                >
-                  <MapPin className="h-8 w-8 text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {latitude && longitude
-                      ? "Localização selecionada. Clique para alterar."
-                      : "Selecione a localização no mapa"}
+                  <p className="text-xs text-muted-foreground">
+                    Clique para selecionar uma das suas quadras cadastradas
                   </p>
-                  <Button variant="outline" size="sm" type="button" disabled={isLoading}>
-                    {latitude && longitude ? "Alterar localização" : "Abrir mapa"}
-                  </Button>
                 </div>
-                
-                {/* Diálogo para o seletor de mapa do Google */}
-                <Dialog 
-                  open={isMapaAberto} 
-                  onOpenChange={(open) => {
-                    console.log("Dialog onOpenChange:", open);
-                    if (open) {
-                      setIsMapaAberto(true);
-                      console.log("Diálogo do mapa aberto");
-                    } else {
-                      // Fechamento controlado
-                      setIsMapaAberto(false);
-                      console.log("Diálogo do mapa fechado pelo usuário");
-                    }
-                  }}
-                >
-                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Selecionar localização</DialogTitle>
-                      <DialogDescription>
-                        Clique no mapa para selecionar a localização exata da competição
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="h-[500px] w-full">
-                      {isMapaAberto && (
-                        <GoogleMapaSeletor
-                          onSelectLocation={handleSelecionarLocalizacao}
-                          initialLocation={
-                            latitude && longitude 
-                              ? { lat: latitude, lng: longitude } 
-                              : { lat: -23.5505, lng: -46.6333 }
-                          }
-                        />
-                      )}
-                    </div>
-                  </DialogContent>
-                </Dialog>
 
-                {latitude && longitude && endereco && (
-                  <div className="mt-4 space-y-2">
-                    <Label>Visualização da localização</Label>
-                    <GoogleMapaExibicao 
-                      latitude={latitude} 
-                      longitude={longitude} 
-                      endereco={endereco} 
-                      altura="200px"
-                    />
-                    <div className="text-xs text-muted-foreground mt-1">
-                      <p>Localização: {endereco}</p>
-                      <p>Coordenadas: {latitude.toFixed(6)}, {longitude.toFixed(6)}</p>
+                {quadraSelecionada && (
+                  <div className="space-y-4">
+                    <div className="p-4 border rounded-lg bg-muted/30">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium">{quadraSelecionada.name}</h4>
+                          <p className="text-sm text-muted-foreground mt-1">{quadraSelecionada.address}</p>
+                          <p className="text-sm text-muted-foreground">{quadraSelecionada.neighborhood}</p>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {quadraSelecionada.sports.map((sport: string) => (
+                              <span
+                                key={sport}
+                                className="text-xs bg-primary/10 text-primary px-2 py-1 rounded"
+                              >
+                                {sport}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={abrirSeletorQuadras}
+                          disabled={isLoading}
+                        >
+                          Alterar
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Mapa da localização da quadra */}
+                    <div className="space-y-2">
+                      <Label>Localização da quadra</Label>
+                      <GoogleMapaExibicao 
+                        latitude={quadraSelecionada.latitude} 
+                        longitude={quadraSelecionada.longitude} 
+                        endereco={quadraSelecionada.address} 
+                        altura="250px"
+                      />
+                      <div className="text-xs text-muted-foreground">
+                        <p>📍 {quadraSelecionada.address}</p>
+                        <p>📌 Coordenadas: {quadraSelecionada.latitude.toFixed(6)}, {quadraSelecionada.longitude.toFixed(6)}</p>
+                      </div>
                     </div>
                   </div>
                 )}
+
+                {/* Dialog para seleção de quadras */}
+                <Dialog open={isQuadraDialogAberto} onOpenChange={setIsQuadraDialogAberto}>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Selecionar Quadra</DialogTitle>
+                      <DialogDescription>
+                        Escolha uma das suas quadras cadastradas para a competição
+                      </DialogDescription>
+                    </DialogHeader>
+                    
+                    <Command>
+                      <CommandInput placeholder="Buscar quadras..." />
+                      <CommandList>
+                        <CommandEmpty>Nenhuma quadra encontrada.</CommandEmpty>
+                        <CommandGroup>
+                          {quadrasDisponiveis.map((quadra) => (
+                            <CommandItem
+                              key={quadra.id}
+                              onSelect={() => handleSelecionarQuadra(quadra)}
+                              className="cursor-pointer"
+                            >
+                              <div className="flex items-center space-x-2 w-full">
+                                <div className="flex-1">
+                                  <div className="font-medium">{quadra.name}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {quadra.neighborhood}
+                                  </div>
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {quadra.sports.slice(0, 2).map((sport: string) => (
+                                      <span
+                                        key={sport}
+                                        className="text-xs bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded"
+                                      >
+                                        {sport}
+                                      </span>
+                                    ))}
+                                    {quadra.sports.length > 2 && (
+                                      <span className="text-xs text-muted-foreground">
+                                        +{quadra.sports.length - 2}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                {quadraSelecionada?.id === quadra.id && (
+                                  <Check className="h-4 w-4 text-primary" />
+                                )}
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+
+                    {quadrasDisponiveis.length === 0 && (
+                      <div className="text-center py-6">
+                        <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-medium mb-2">Nenhuma quadra cadastrada</h3>
+                        <p className="text-muted-foreground mb-4">
+                          Você precisa cadastrar pelo menos uma quadra para criar uma competição.
+                        </p>
+                        <Button
+                          onClick={() => router.push("/organizer/courts/new")}
+                          className="bg-gradient-to-r from-primary-sportlink to-rose-500"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Cadastrar Quadra
+                        </Button>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
               </CardContent>
             </Card>
 

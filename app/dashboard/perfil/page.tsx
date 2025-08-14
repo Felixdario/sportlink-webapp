@@ -45,7 +45,8 @@ export default function PerfilPage() {
     bio: "",
     website: "",
     nivel: "",
-    esportePrincipal: ""
+    esportePrincipal: "",
+    disponibilidadeInvestir: ""
   })
 
   useEffect(() => {
@@ -108,7 +109,8 @@ export default function PerfilPage() {
       website: "",
       nivel: profileData?.skillLevel || "",
       esportePrincipal: profileData?.favoriteSports && profileData.favoriteSports.length > 0 ? 
-        profileData.favoriteSports[0] : ""
+        profileData.favoriteSports[0] : "",
+      disponibilidadeInvestir: profileData?.disponibilidadeInvestir || ""
     })
   }, [user, userData, profileData])
   
@@ -412,6 +414,21 @@ export default function PerfilPage() {
                     onChange={(e) => handleInputChange("website", e.target.value)}
                     placeholder="seusite.com.br"
                   />
+                </div>
+                 <div className="space-y-2">
+                  <Label htmlFor="nivel">Tem disponibilidade para investir?</Label>
+                  <Select 
+                    value={formData.disponibilidadeInvestir} 
+                    onValueChange={(value) => handleInputChange("disponibilidadeInvestir", value)}
+                  >
+                    <SelectTrigger id="nivel">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="yes">Sim</SelectItem>
+                      <SelectItem value="no">Não</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="nivel">Nível</Label>

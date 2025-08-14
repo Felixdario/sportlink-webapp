@@ -87,6 +87,7 @@ export default function CompleteProfilePage() {
     phone: "",
     bio: "",
     profileImage: "",
+    disponibilidadeInvestir: "",
 
     // Localização
     address: "",
@@ -225,6 +226,21 @@ export default function CompleteProfilePage() {
                 />
               </div>
             </CardContent>
+             <div className="space-y-2">
+                  <Label htmlFor="disponibilidadeInvestir">Tem disponibilidade para investir?</Label>
+                  <Select 
+                    value={formData.disponibilidadeInvestir} 
+                    onValueChange={(value) => handleInputChange("disponibilidadeInvestir", value)}
+                  >
+                    <SelectTrigger id="disponibilidadeInvestir">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="yes">Sim</SelectItem>
+                      <SelectItem value="no">Não</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
           </Card>
         )
 
