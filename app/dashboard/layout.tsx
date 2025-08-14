@@ -118,9 +118,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <span>Atletas</span>
                     </Link>
                     <Link
-                      href="/dashboard/mensagens"
+                      href="/dashboard/competicoes"
                       className={`flex items-center gap-2 px-4 py-2 rounded-md ${
-                        pathname === "/dashboard/mensagens"
+                        pathname === "/dashboard/competicoes"
                           ? "bg-gradient-to-r from-primary-sportlink/20 to-rose-500/20 text-primary-sportlink"
                           : "hover:bg-muted"
                       }`}
