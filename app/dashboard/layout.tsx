@@ -7,7 +7,7 @@ import { useRouter, usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import Link from "next/link"
-import { Trophy, Menu, Home, MapPin, Calendar, Users, User, LogOut, Settings, MessageSquare } from "lucide-react"
+import { Trophy, Menu, Home, MapPin, Calendar, Users, User, LogOut, Settings, MessageSquare, Trophy } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -125,11 +125,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           : "hover:bg-muted"
                       }`}
                     >
-                      <MessageSquare className="h-5 w-5" />
-                      <span>Mensagens</span>
-                      {unreadMessages > 0 && (
-                        <Badge className="ml-auto bg-primary-sportlink text-white">{unreadMessages}</Badge>
-                      )}
+                      <Trophy className="h-5 w-5" />
+                      <span>Competições</span>
                     </Link>
                     <Link
                       href="/dashboard/perfil"

@@ -225,7 +225,6 @@ export default function CompleteProfilePage() {
                   rows={3}
                 />
               </div>
-            </CardContent>
              <div className="space-y-2">
                   <Label htmlFor="disponibilidadeInvestir">Tem disponibilidade para investir?</Label>
                   <Select 
@@ -241,6 +240,7 @@ export default function CompleteProfilePage() {
                     </SelectContent>
                   </Select>
                 </div>
+            </CardContent>
           </Card>
         )
 
