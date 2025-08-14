@@ -30,20 +30,6 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import format from "date-fns/format"
 import ptBR from "date-fns/locale/pt-BR"
 import { cn } from "@/lib/utils"
-import dynamic from "next/dynamic"
-
-// Componente para exibir a localização no mapa
-const GoogleMapaExibicao = dynamic(() => import("@/components/google-mapa-exibicao").then(mod => mod.default), {
-  ssr: false,
-  loading: () => (
-    <div className="bg-muted/30 rounded-md overflow-hidden h-[200px] flex items-center justify-center">
-      <div className="text-center">
-        <div className="h-6 w-6 border-2 border-primary-sportlink border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-        <p className="text-sm text-muted-foreground">Carregando visualização do mapa...</p>
-      </div>
-    </div>
-  ),
-})
 
 export default function CriarCompeticaoPage() {
   const router = useRouter()
@@ -78,11 +64,25 @@ export default function CriarCompeticaoPage() {
 
   useEffect(() => {
     setMounted(true)
+    carregarQuadras()
+  }, [])
+
+  // Efeito para recarregar quadras quando a página ganha foco (usuário volta de outra página)
+  useEffect(() => {
+    const handleFocus = () => {
+      carregarQuadras()
+    }
+
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [])
+
+  const carregarQuadras = () => {
     // Carregar quadras do organizador
     const organizerId = "org1" // Em produção, viria do contexto de autenticação
     const quadras = getCourts(organizerId)
     setQuadrasDisponiveis(quadras)
-  }, [])
+  }
 
   const handleSelecionarQuadra = (quadra: any) => {
     setQuadraSelecionada(quadra)
@@ -564,48 +564,38 @@ export default function CriarCompeticaoPage() {
                 </div>
 
                 {quadraSelecionada && (
-                  <div className="space-y-4">
-                    <div className="p-4 border rounded-lg bg-muted/30">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium">{quadraSelecionada.name}</h4>
-                          <p className="text-sm text-muted-foreground mt-1">{quadraSelecionada.address}</p>
-                          <p className="text-sm text-muted-foreground">{quadraSelecionada.neighborhood}</p>
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {quadraSelecionada.sports.map((sport: string) => (
-                              <span
-                                key={sport}
-                                className="text-xs bg-primary/10 text-primary px-2 py-1 rounded"
-                              >
-                                {sport}
-                              </span>
-                            ))}
-                          </div>
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-medium">{quadraSelecionada.name}</h4>
+                        <p className="text-sm text-muted-foreground mt-1">{quadraSelecionada.address}</p>
+                        <p className="text-sm text-muted-foreground">{quadraSelecionada.neighborhood}</p>
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {quadraSelecionada.sports.map((sport: string) => (
+                            <span
+                              key={sport}
+                              className="text-xs bg-primary/10 text-primary px-2 py-1 rounded"
+                            >
+                              {sport}
+                            </span>
+                          ))}
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={abrirSeletorQuadras}
-                          disabled={isLoading}
-                        >
-                          Alterar
-                        </Button>
+                        <div className="text-xs text-muted-foreground mt-2">
+                          <p>📍 {quadraSelecionada.address}</p>
+                          <p>💰 R$ {quadraSelecionada.price}/hora</p>
+                          {quadraSelecionada.rating && (
+                            <p>⭐ {quadraSelecionada.rating} ({quadraSelecionada.totalReviews} avaliações)</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Mapa da localização da quadra */}
-                    <div className="space-y-2">
-                      <Label>Localização da quadra</Label>
-                      <GoogleMapaExibicao 
-                        latitude={quadraSelecionada.latitude} 
-                        longitude={quadraSelecionada.longitude} 
-                        endereco={quadraSelecionada.address} 
-                        altura="250px"
-                      />
-                      <div className="text-xs text-muted-foreground">
-                        <p>📍 {quadraSelecionada.address}</p>
-                        <p>📌 Coordenadas: {quadraSelecionada.latitude.toFixed(6)}, {quadraSelecionada.longitude.toFixed(6)}</p>
-                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={abrirSeletorQuadras}
+                        disabled={isLoading}
+                      >
+                        Alterar
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -614,16 +604,40 @@ export default function CriarCompeticaoPage() {
                 <Dialog open={isQuadraDialogAberto} onOpenChange={setIsQuadraDialogAberto}>
                   <DialogContent className="max-w-md">
                     <DialogHeader>
-                      <DialogTitle>Selecionar Quadra</DialogTitle>
-                      <DialogDescription>
-                        Escolha uma das suas quadras cadastradas para a competição
-                      </DialogDescription>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <DialogTitle>Selecionar Quadra</DialogTitle>
+                          <DialogDescription>
+                            Escolha uma das suas quadras cadastradas para a competição
+                          </DialogDescription>
+                        </div>
+                      </div>
                     </DialogHeader>
                     
                     <Command>
                       <CommandInput placeholder="Buscar quadras..." />
                       <CommandList>
-                        <CommandEmpty>Nenhuma quadra encontrada.</CommandEmpty>
+                        <CommandEmpty>
+                          <div className="text-center py-4">
+                            <p className="text-muted-foreground mb-3">Nenhuma quadra encontrada.</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open("/organizer/courts/new", "_blank")}
+                              className="mr-2"
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              Nova Quadra
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={carregarQuadras}
+                            >
+                              🔄 Atualizar
+                            </Button>
+                          </div>
+                        </CommandEmpty>
                         <CommandGroup>
                           {quadrasDisponiveis.map((quadra) => (
                             <CommandItem
@@ -670,13 +684,22 @@ export default function CriarCompeticaoPage() {
                         <p className="text-muted-foreground mb-4">
                           Você precisa cadastrar pelo menos uma quadra para criar uma competição.
                         </p>
-                        <Button
-                          onClick={() => router.push("/organizer/courts/new")}
-                          className="bg-gradient-to-r from-primary-sportlink to-rose-500"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Cadastrar Quadra
-                        </Button>
+                        <div className="space-y-2">
+                          <Button
+                            onClick={() => window.open("/organizer/courts/new", "_blank")}
+                            className="w-full bg-gradient-to-r from-primary-sportlink to-rose-500"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Cadastrar Nova Quadra
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={carregarQuadras}
+                            className="w-full"
+                          >
+                            🔄 Atualizar Lista
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </DialogContent>

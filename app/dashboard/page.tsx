@@ -1,9 +1,24 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { MapPin, Calendar, Trophy, Users, ArrowRight } from "lucide-react"
+import { MapPin, Calendar, Trophy, Users, ArrowRight, Star } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { getCourts } from "@/lib/data/courts"
 
 export default function DashboardPage() {
+  const [mounted, setMounted] = useState(false)
+  const [quadrasCadastradas, setQuadrasCadastradas] = useState<any[]>([])
+
+  useEffect(() => {
+    setMounted(true)
+    // Carregar quadras do organizador para mostrar estatísticas
+    const organizerId = "org1" // Em produção, viria do contexto de autenticação
+    const quadras = getCourts(organizerId)
+    setQuadrasCadastradas(quadras)
+  }, [])
+
   const proximasAtividades = [
     {
       id: 1,
@@ -23,29 +38,12 @@ export default function DashboardPage() {
     },
   ]
 
-  const quadrasProximas = [
-    {
-      id: 1,
-      nome: "Quadra Poliesportiva Central",
-      endereco: "Av. Principal, 123 - Centro",
-      distancia: "1.2 km",
-      esportes: ["Futebol", "Basquete", "Vôlei"],
-    },
-    {
-      id: 2,
-      nome: "Complexo Esportivo Municipal",
-      endereco: "Rua das Flores, 456 - Jardim",
-      distancia: "2.5 km",
-      esportes: ["Tênis", "Futebol", "Natação"],
-    },
-    {
-      id: 3,
-      nome: "Arena Esportiva Zona Sul",
-      endereco: "Av. Sul, 789 - Zona Sul",
-      distancia: "3.8 km",
-      esportes: ["Futsal", "Handebol", "Basquete"],
-    },
-  ]
+  if (!mounted) {
+    return null
+  }
+
+  const quadrasAtivas = quadrasCadastradas.filter(q => q.isActive).length
+  const totalEsportes = [...new Set(quadrasCadastradas.flatMap(q => q.sports))].length
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -54,22 +52,22 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Quadras próximas</CardTitle>
+            <CardTitle className="text-sm font-medium">Suas quadras</CardTitle>
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-muted-foreground">Em um raio de 5km</p>
+            <div className="text-2xl font-bold">{quadrasCadastradas.length}</div>
+            <p className="text-xs text-muted-foreground">{quadrasAtivas} ativas</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Competições ativas</CardTitle>
+            <CardTitle className="text-sm font-medium">Esportes disponíveis</CardTitle>
             <Trophy className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4</div>
-            <p className="text-xs text-muted-foreground">Disponíveis para participação</p>
+            <div className="text-2xl font-bold">{totalEsportes}</div>
+            <p className="text-xs text-muted-foreground">Nas suas quadras</p>
           </CardContent>
         </Card>
         <Card>
@@ -159,37 +157,76 @@ export default function DashboardPage() {
 
         <Card className="col-span-1">
           <CardHeader>
-            <CardTitle>Quadras próximas a você</CardTitle>
-            <CardDescription>Quadras disponíveis na sua região</CardDescription>
+            <CardTitle>Suas quadras cadastradas</CardTitle>
+            <CardDescription>Quadras que você gerencia na plataforma</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {quadrasProximas.map((quadra) => (
-                <div key={quadra.id} className="border rounded-lg p-4">
-                  <h4 className="font-medium">{quadra.nome}</h4>
-                  <div className="flex items-center text-muted-foreground text-sm mb-2">
-                    <MapPin className="w-4 h-4 mr-1" />
-                    <p>{quadra.endereco}</p>
-                    <span className="mx-2">•</span>
-                    <p>{quadra.distancia}</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {quadra.esportes.map((esporte, index) => (
+            {quadrasCadastradas.length > 0 ? (
+              <div className="space-y-4">
+                {quadrasCadastradas.slice(0, 3).map((quadra) => (
+                  <div key={quadra.id} className="border rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="font-medium">{quadra.name}</h4>
                       <span
-                        key={index}
-                        className="bg-primary-sportlink/10 text-primary-sportlink text-xs px-2 py-1 rounded-full"
+                        className={`text-xs px-2 py-1 rounded-full ${
+                          quadra.isActive
+                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                            : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300"
+                        }`}
                       >
-                        {esporte}
+                        {quadra.isActive ? "Ativa" : "Inativa"}
                       </span>
-                    ))}
+                    </div>
+                    <div className="flex items-center text-muted-foreground text-sm mb-2">
+                      <MapPin className="w-4 h-4 mr-1" />
+                      <p>{quadra.neighborhood}</p>
+                      <span className="mx-2">•</span>
+                      <p>R$ {quadra.price}/h</p>
+                    </div>
+                    {quadra.rating && (
+                      <div className="flex items-center text-muted-foreground text-sm mb-2">
+                        <Star className="w-4 h-4 mr-1 text-yellow-500" />
+                        <p>{quadra.rating} ({quadra.totalReviews} avaliações)</p>
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {quadra.sports.slice(0, 3).map((esporte: string, index: number) => (
+                        <span
+                          key={index}
+                          className="bg-primary-sportlink/10 text-primary-sportlink text-xs px-2 py-1 rounded-full"
+                        >
+                          {esporte}
+                        </span>
+                      ))}
+                      {quadra.sports.length > 3 && (
+                        <span className="text-xs text-muted-foreground px-2 py-1">
+                          +{quadra.sports.length - 3} mais
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+                {quadrasCadastradas.length > 3 && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    E mais {quadrasCadastradas.length - 3} quadra(s)
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground mb-4">Você ainda não tem quadras cadastradas</p>
+                <Link href="/organizer/courts/new">
+                  <Button className="bg-gradient-to-r from-primary-sportlink to-rose-500">
+                    Cadastrar primeira quadra
+                  </Button>
+                </Link>
+              </div>
+            )}
             <div className="mt-4">
-              <Link href="/dashboard/quadras">
+              <Link href="/organizer/courts">
                 <Button variant="outline" className="w-full">
-                  Ver todas as quadras
+                  Gerenciar todas as quadras
                 </Button>
               </Link>
             </div>
