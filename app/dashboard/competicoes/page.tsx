@@ -25,8 +25,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
-import { format } from "date-fns"
-import { ptBR } from "date-fns/locale"
+// Importações corrigidas do date-fns
+import format from "date-fns/format"
+import ptBR from "date-fns/locale/pt-BR"
 
 interface Competicao {
   id: number
@@ -65,8 +66,8 @@ const competicoesExemplo: Competicao[] = [
     categoria: "Amador",
     formato: "Eliminatória",
     dataInicio: "2025-02-15T09:00:00",
-    dataFim: "2025-02-16T18:00:00",
-    dataLimiteInscricao: "2025-02-10T23:59:59",
+    dataFim: "2025-11-16T18:00:00",
+    dataLimiteInscricao: "2025-09-10T23:59:59",
     local: "Centro Esportivo Municipal",
     endereco: "Rua das Palmeiras, 123 - Centro",
     vagas: 16,
@@ -421,10 +422,6 @@ export default function CompeticoesPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         {getStatusIcon(competicao.status)}
                         {getStatusBadge(competicao.status)}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                        <span className="text-xs text-muted-foreground">4.5</span>
                       </div>
                     </div>
                     <CardTitle className="text-lg leading-tight">{competicao.nome}</CardTitle>

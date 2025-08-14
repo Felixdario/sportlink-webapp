@@ -2,11 +2,12 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search, MapPin } from "lucide-react"
+import Script from "next/script"
 
 interface SelecionarLocalizacaoMapaProps {
   onSelectLocation: (lat: number, lng: number, endereco: string) => void
@@ -19,13 +20,21 @@ export default function SelecionarLocalizacaoMapa({
 }: SelecionarLocalizacaoMapaProps) {
   const { theme } = useTheme()
   const [mounted, setMounted] = useState(false)
-  const [mapComponent, setMapComponent] = useState<React.ReactNode | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [mapLoaded, setMapLoaded] = useState(false)
   const [position, setPosition] = useState<[number, number] | null>(
     initialLocation ? [initialLocation.lat, initialLocation.lng] : null,
   )
   const [enderecoBusca, setEnderecoBusca] = useState("")
   const [enderecoSelecionado, setEnderecoSelecionado] = useState("")
   const [isSearching, setIsSearching] = useState(false)
+  
+  // Referências para o mapa e o container
+  const mapContainerRef = useRef<HTMLDivElement>(null)
+  const mapInstanceRef = useRef<any>(null)
+  const markerRef = useRef<any>(null)
+  const mapInitializedRef = useRef(false)
 
   // Função para buscar endereço a partir das coordenadas (geocodificação reversa)
   const buscarEnderecoPorCoordenadas = async (lat: number, lng: number) => {
@@ -62,10 +71,34 @@ export default function SelecionarLocalizacaoMapa({
         setEnderecoSelecionado(display_name)
 
         // Atualizar o mapa com a nova posição
-        loadMap(newPosition)
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.setView(newPosition, 15)
+          
+          // Atualizar a posição do marcador
+          if (markerRef.current) {
+            markerRef.current.setLatLng(newPosition)
+          } else {
+            // Criar marcador se não existir
+            const L = window.L
+            const icon = L.icon({
+              iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
+              iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
+              shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
+              iconSize: [25, 41],
+              iconAnchor: [12, 41],
+              popupAnchor: [1, -34],
+              shadowSize: [41, 41]
+            })
+            
+            markerRef.current = L.marker(newPosition, { icon }).addTo(mapInstanceRef.current)
+          }
+        }
+      } else {
+        setError("Endereço não encontrado. Tente ser mais específico.")
       }
     } catch (error) {
       console.error("Erro ao buscar coordenadas:", error)
+      setError("Erro ao buscar coordenadas. Tente novamente.")
     } finally {
       setIsSearching(false)
     }
@@ -77,117 +110,249 @@ export default function SelecionarLocalizacaoMapa({
     }
   }
 
-  // Carregar o mapa com a posição especificada
-  const loadMap = async (pos: [number, number] | null = position) => {
-    try {
-      // Importar os módulos do Leaflet apenas no cliente
-      const L = await import("leaflet")
-      const { MapContainer, TileLayer, Marker, useMapEvents, useMap } = await import("react-leaflet")
-
-      // Importar o CSS do Leaflet
-      await import("leaflet/dist/leaflet.css")
-
-      // Corrigir o problema dos ícones do Leaflet
-      const icon = L.icon({
-        iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
-        iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
-        shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41],
-      })
-
-      // Componente para lidar com cliques no mapa
-      function LocationMarker() {
-        useMapEvents({
-          click(e) {
-            const { lat, lng } = e.latlng
-            const newPosition: [number, number] = [lat, lng]
-            setPosition(newPosition)
-            buscarEnderecoPorCoordenadas(lat, lng)
-          },
-        })
-
-        return pos ? <Marker position={pos} icon={icon} /> : null
+  // Função para limpar mapa existente
+  const cleanupMap = () => {
+    if (mapInstanceRef.current) {
+      try {
+        mapInstanceRef.current.remove()
+      } catch (e) {
+        console.error("Erro ao remover mapa:", e)
+      } finally {
+        mapInstanceRef.current = null
+        markerRef.current = null
+        mapInitializedRef.current = false
       }
-
-      // Componente para atualizar o tema do mapa
-      function MapThemeUpdater() {
-        const map = useMap()
-
-        useEffect(() => {
-          if (map) {
-            // Adicionar/remover classe dark no container do mapa
-            const container = map.getContainer()
-            if (theme === "dark") {
-              container.classList.add("dark-map")
-            } else {
-              container.classList.remove("dark-map")
-            }
-          }
-        }, [map])
-
-        return null
-      }
-
-      // Criar o componente do mapa
-      setMapComponent(
-        <>
-          <style jsx global>{`
-            .dark-map .leaflet-tile {
-              filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
-            }
-            .dark-map .leaflet-container {
-              background: #333;
-            }
-          `}</style>
-
-          <MapContainer
-            center={pos || [initialLocation.lat, initialLocation.lng]}
-            zoom={13}
-            style={{ height: "100%", width: "100%" }}
-            className={theme === "dark" ? "dark-map" : ""}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <MapThemeUpdater />
-            <LocationMarker />
-          </MapContainer>
-        </>,
-      )
-    } catch (error) {
-      console.error("Erro ao carregar o mapa:", error)
-      setMapComponent(
-        <div className="flex flex-col items-center justify-center h-full">
-          <MapPin className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-xl font-medium mb-2">Erro ao carregar o mapa</h3>
-          <p className="text-muted-foreground text-center max-w-md">
-            Não foi possível carregar o mapa. Por favor, tente novamente mais tarde.
-          </p>
-        </div>,
-      )
     }
   }
+  
+  // Carregar scripts do Leaflet manualmente
+  useEffect(() => {
+    if (mounted && !mapLoaded) {
+      // Verificar se o Leaflet já está carregado
+      if (window.L) {
+        setMapLoaded(true)
+        return
+      }
+
+      // Criar e inserir o CSS do Leaflet
+      const linkEl = document.createElement('link')
+      linkEl.rel = 'stylesheet'
+      linkEl.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
+      linkEl.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY='
+      linkEl.crossOrigin = ''
+      document.head.appendChild(linkEl)
+
+      // Criar e inserir o script do Leaflet
+      const scriptEl = document.createElement('script')
+      scriptEl.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+      scriptEl.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo='
+      scriptEl.crossOrigin = ''
+      scriptEl.onload = () => {
+        console.log("Leaflet carregado com sucesso")
+        setMapLoaded(true)
+      }
+      scriptEl.onerror = () => {
+        console.error("Erro ao carregar Leaflet")
+        setError("Erro ao carregar biblioteca de mapas")
+        setIsLoading(false)
+      }
+      document.body.appendChild(scriptEl)
+
+      return () => {
+        document.head.removeChild(linkEl)
+        document.body.removeChild(scriptEl)
+      }
+    }
+  }, [mounted, mapLoaded])
+
+  // Criar ou atualizar o mapa
+  useEffect(() => {
+    if (!mounted) return
+    
+    // Tentar inicializar o mapa quando o componente estiver montado
+    let initializeAttempts = 0;
+    const maxAttempts = 5;
+    
+    // Função para tentar inicializar o mapa
+    const tryInitializeMap = () => {
+      console.log(`Tentativa ${initializeAttempts + 1} de inicializar o mapa`);
+      
+      // Verificar se já tentamos muitas vezes
+      if (initializeAttempts >= maxAttempts) {
+        console.error("Número máximo de tentativas de inicialização do mapa atingido");
+        setError("Não foi possível carregar o mapa após várias tentativas");
+        setIsLoading(false);
+        return;
+      }
+      
+      // Verificar se temos o contêiner e o Leaflet carregado
+      if (!mapContainerRef.current || !window.L || !mapLoaded) {
+        // Se não tivermos, tentar novamente após um intervalo
+        initializeAttempts++;
+        setTimeout(tryInitializeMap, 500);
+        return;
+      }
+      
+      console.log("Iniciando criação do mapa de seleção", { 
+        position, 
+        initialLocation,
+        hasContainer: !!mapContainerRef.current,
+        isInitialized: mapInitializedRef.current,
+        mapLoadedStatus: mapLoaded,
+        leafletAvailable: !!window.L
+      });
+      
+      setIsLoading(true);
+      setError(null);
+      
+      // Limpar mapa anterior se existir
+      if (mapInstanceRef.current) {
+        console.log("Limpando mapa existente");
+        cleanupMap();
+      }
+      
+      try {
+        // Acessar o objeto Leaflet
+        const L = window.L;
+        
+        // Posição inicial
+        const initialPos = position || [initialLocation.lat, initialLocation.lng];
+        console.log("Criando mapa com posição inicial:", initialPos);
+        
+        // Criar elemento contêiner se não existir
+        if (!document.getElementById("mapa-selecao-localizacao")) {
+          console.error("Criando contêiner manualmente");
+          const containerDiv = document.createElement("div");
+          containerDiv.id = "mapa-selecao-localizacao";
+          containerDiv.style.width = "100%";
+          containerDiv.style.height = "100%";
+          containerDiv.style.minHeight = "400px";
+          
+          // Limpar e adicionar ao contêiner pai
+          if (mapContainerRef.current) {
+            mapContainerRef.current.innerHTML = "";
+            mapContainerRef.current.appendChild(containerDiv);
+          }
+        }
+        
+        // Obter o elemento diretamente do DOM para garantir
+        const mapElement = document.getElementById("mapa-selecao-localizacao");
+        if (!mapElement) {
+          throw new Error("Elemento do mapa não encontrado, mesmo após tentativa de criação");
+        }
+        
+        // Criar o mapa
+        const map = L.map(mapElement, {
+          center: initialPos,
+          zoom: 13,
+        });
+        
+        // Guardar referência
+        mapInstanceRef.current = map;
+        mapInitializedRef.current = true;
+        
+        // Adicionar camada do mapa
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        // Aplicar tema escuro se necessário
+        if (theme === "dark" && mapElement) {
+          mapElement.classList.add("dark-map");
+        }
+        
+        // Criar ícone do marcador
+        const icon = L.icon({
+          iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
+          iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
+          shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+          popupAnchor: [1, -34],
+          shadowSize: [41, 41]
+        });
+        
+        // Adicionar marcador se tivermos uma posição
+        if (position) {
+          markerRef.current = L.marker(position, { icon }).addTo(map);
+        }
+        
+        // Evento de clique no mapa
+        map.on('click', async (e: any) => {
+          const { lat, lng } = e.latlng;
+          const newPosition: [number, number] = [lat, lng];
+          setPosition(newPosition);
+          
+          // Atualizar ou criar marcador
+          if (markerRef.current) {
+            markerRef.current.setLatLng(newPosition);
+          } else {
+            markerRef.current = L.marker(newPosition, { icon }).addTo(map);
+          }
+          
+          // Buscar endereço para as coordenadas
+          buscarEnderecoPorCoordenadas(lat, lng);
+        });
+        
+        // Invalidar tamanho para garantir renderização correta
+        // Sequência de invalidações para garantir que funcione em diferentes cenários
+        setTimeout(() => map.invalidateSize(true), 100);
+        setTimeout(() => map.invalidateSize(true), 300);
+        setTimeout(() => map.invalidateSize(true), 500);
+        
+        console.log("Mapa de seleção criado com sucesso");
+        setIsLoading(false);
+      } catch (err) {
+        console.error("Erro ao criar mapa de seleção:", err);
+        setError("Erro ao inicializar o mapa. Tente novamente.");
+        setIsLoading(false);
+        
+        // Tentar novamente após um erro, se não excedemos o número máximo de tentativas
+        initializeAttempts++;
+        setTimeout(tryInitializeMap, 800);
+      }
+    };
+    
+    // Iniciar o processo de inicialização do mapa
+    tryInitializeMap();
+    
+    // Limpar na desmontagem
+    return () => {
+      console.log("Desmontando componente de seleção de mapa");
+      cleanupMap();
+    };
+  }, [mounted, mapLoaded, theme, initialLocation]);
 
   // Atualizar endereço quando a posição mudar
   useEffect(() => {
-    if (position) {
+    if (position && mounted && mapLoaded) {
       buscarEnderecoPorCoordenadas(position[0], position[1])
     }
-  }, [position])
+  }, [position, mounted, mapLoaded])
 
+  // Efeito para setar o estado montado e estilizar o mapa no tema escuro
   useEffect(() => {
     setMounted(true)
-
-    if (mounted) {
-      loadMap()
+    
+    // Inserir estilo global para o mapa no tema escuro
+    const styleEl = document.createElement('style')
+    styleEl.innerHTML = `
+      .dark-map .leaflet-tile {
+        filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+      }
+      .dark-map .leaflet-container {
+        background: #333;
+      }
+    `
+    document.head.appendChild(styleEl)
+    
+    return () => {
+      document.head.removeChild(styleEl)
+      cleanupMap()
     }
-  }, [mounted, theme])
+  }, [])
 
-  if (!mounted || !mapComponent) {
+  if (!mounted || isLoading) {
     return (
       <div className="h-full flex items-center justify-center bg-muted rounded-md">
         <div className="text-center">
@@ -197,6 +362,20 @@ export default function SelecionarLocalizacaoMapa({
             Estamos carregando o mapa para seleção de localização.
           </p>
         </div>
+      </div>
+    )
+  }
+  
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full rounded-md border border-border">
+        <MapPin className="h-8 w-8 text-muted-foreground mb-2" />
+        <p className="text-sm text-muted-foreground text-center">
+          {error}
+        </p>
+        <Button onClick={() => setError(null)} className="mt-4" variant="outline">
+          Tentar novamente
+        </Button>
       </div>
     )
   }
@@ -214,12 +393,22 @@ export default function SelecionarLocalizacaoMapa({
             onKeyDown={(e) => e.key === "Enter" && buscarCoordenadasPorEndereco()}
           />
         </div>
-        <Button onClick={buscarCoordenadasPorEndereco} disabled={isSearching}>
+        <Button onClick={buscarCoordenadasPorEndereco} disabled={isSearching || !enderecoBusca.trim()}>
           {isSearching ? "Buscando..." : "Buscar"}
         </Button>
       </div>
 
-      <div className="flex-1 rounded-md overflow-hidden border border-border relative">{mapComponent}</div>
+      <div 
+        className="flex-1 rounded-md overflow-hidden border border-border relative"
+        style={{ minHeight: "400px" }} // Garante uma altura mínima
+      >
+        <div 
+          ref={mapContainerRef} 
+          className="h-full w-full" 
+          id="mapa-selecao-localizacao" 
+          style={{ minHeight: "400px" }} // Garante uma altura mínima
+        />
+      </div>
 
       {position && (
         <div className="mt-4 space-y-2">

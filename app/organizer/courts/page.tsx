@@ -133,18 +133,6 @@ export default function CourtsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {filteredCourts.map((court) => (
             <Card key={court.id} className="overflow-hidden">
-              <div className="relative">
-                <img
-                  src={court.images[0] || "/placeholder.svg"}
-                  alt={court.name}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="absolute top-4 right-4">
-                  <Badge variant={court.isActive ? "default" : "secondary"}>
-                    {court.isActive ? "Ativa" : "Inativa"}
-                  </Badge>
-                </div>
-              </div>
 
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-4">
@@ -156,6 +144,12 @@ export default function CourtsPage() {
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-2">{court.description}</p>
                   </div>
+            
+                <div className="mr-6">
+                  <Badge variant={court.isActive ? "default" : "secondary"}>
+                    {court.isActive ? "Ativa" : "Inativa"}
+                  </Badge>
+                </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm">

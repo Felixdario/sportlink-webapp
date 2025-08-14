@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import {
   Calendar,
   MapPin,
@@ -20,6 +20,7 @@ import {
   Flag,
   UserCheck,
   Loader2,
+  PartyPopper,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -37,8 +38,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { format } from "date-fns"
-import { ptBR } from "date-fns/locale"
+// Importações corrigidas do date-fns
+import format from "date-fns/format"
+import ptBR from "date-fns/locale/pt-BR"
 
 interface Competicao {
   id: number
@@ -89,6 +91,7 @@ interface Partida {
 export default function CompeticaoDetalhePage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [competicao, setCompeticao] = useState<Competicao | null>(null)
   const [participantes, setParticipantes] = useState<Participante[]>([])
   const [partidas, setPartidas] = useState<Partida[]>([])
@@ -96,6 +99,29 @@ export default function CompeticaoDetalhePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isInscrevendo, setIsInscrevendo] = useState(false)
   const [isFavorito, setIsFavorito] = useState(false)
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
+  const [localMode, setLocalMode] = useState(false)
+
+  useEffect(() => {
+    // Verificar se a competição foi recém-criada
+    const recemCriada = searchParams.get('recemCriada')
+    const localModeParam = searchParams.get('localMode')
+    
+    if (recemCriada === 'true') {
+      setShowSuccessMessage(true)
+      
+      // Esconder a mensagem após 5 segundos
+      const timer = setTimeout(() => {
+        setShowSuccessMessage(false)
+      }, 5000)
+      
+      return () => clearTimeout(timer)
+    }
+    
+    if (localModeParam === 'true') {
+      setLocalMode(true)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     const carregarCompeticao = () => {
@@ -109,7 +135,7 @@ export default function CompeticaoDetalhePage() {
 
           // Simular participantes
           const participantesMock: Participante[] = [
-            { id: 1, nome: "Carlos Silva", avatar: "/images/avatars/carlos-silva.jpg", equipe: "Equipe A", pontos: 15 },
+            { id: 1, nome: "Rodrigo Alves", avatar: "/images/avatars/carlos-silva.jpg", equipe: "Equipe A", pontos: 15 },
             { id: 2, nome: "Ana Oliveira", avatar: "/images/avatars/ana-oliveira.jpg", equipe: "Equipe B", pontos: 12 },
             { id: 3, nome: "Pedro Santos", avatar: "/images/avatars/pedro-santos.jpg", equipe: "Equipe C", pontos: 10 },
             {
@@ -256,6 +282,22 @@ export default function CompeticaoDetalhePage() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
+      {showSuccessMessage && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center gap-3 animate-fadeIn">
+          <div className="bg-green-100 p-2 rounded-full">
+            <PartyPopper className="h-5 w-5 text-green-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-medium text-green-800">Competição criada com sucesso!</h3>
+            <p className="text-green-700 text-sm">
+              {localMode 
+                ? "Os dados estão salvos localmente enquanto a API estiver indisponível." 
+                : "Sua competição está agora disponível para os usuários se inscreverem."}
+            </p>
+          </div>
+        </div>
+      )}
+      
       <div className="flex items-center mb-6">
         <Button variant="ghost" size="sm" onClick={() => router.push("/dashboard/competicoes")} className="mr-4">
           <ChevronLeft className="h-4 w-4 mr-2" />
@@ -269,14 +311,6 @@ export default function CompeticaoDetalhePage() {
             <Badge variant="outline">{competicao.categoria}</Badge>
           </div>
           <h1 className="text-3xl font-bold">{competicao.nome}</h1>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="icon" onClick={() => setIsFavorito(!isFavorito)}>
-            <Heart className={`h-4 w-4 ${isFavorito ? "fill-red-500 text-red-500" : ""}`} />
-          </Button>
-          <Button variant="outline" size="icon">
-            <Share2 className="h-4 w-4" />
-          </Button>
         </div>
       </div>
 
@@ -694,9 +728,6 @@ export default function CompeticaoDetalhePage() {
                   </div>
                 </div>
               </div>
-              <Button variant="outline" className="w-full mt-3 bg-transparent" size="sm">
-                Entrar em contato
-              </Button>
             </CardContent>
           </Card>
 

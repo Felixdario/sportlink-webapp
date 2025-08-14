@@ -53,9 +53,6 @@ export default function OrganizerLayout({
       } catch (e) {
         parsedData = null
       }
-      if (!parsedData || parsedData.tipo !== "atleta") {
-        router.push("/user-type")
-      }
     }
   }, [router])
 

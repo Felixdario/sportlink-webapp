@@ -5,6 +5,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { createCompeticao } from "@/lib/api"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -24,13 +25,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { format } from "date-fns"
-import { ptBR } from "date-fns/locale"
+// Importações corrigidas do date-fns
+import format from "date-fns/format"
+import ptBR from "date-fns/locale/pt-BR"
 import { cn } from "@/lib/utils"
 import dynamic from "next/dynamic"
 
-// Importar o componente de seleção de localização no mapa dinamicamente
-const SelecionarLocalizacaoMapa = dynamic(() => import("@/components/selecionar-localizacao-mapa"), {
+// Importar os componentes do Google Maps dinamicamente
+// Usando os componentes reais do Google Maps
+const GoogleMapaSeletor = dynamic(() => import("@/components/google-mapa-seletor").then(mod => mod.default), {
   ssr: false,
   loading: () => (
     <div className="bg-muted rounded-lg overflow-hidden h-[400px] flex items-center justify-center">
@@ -38,6 +41,19 @@ const SelecionarLocalizacaoMapa = dynamic(() => import("@/components/selecionar-
         <div className="h-8 w-8 border-4 border-primary-sportlink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
         <h3 className="text-xl font-medium mb-2">Carregando mapa</h3>
         <p className="text-muted-foreground max-w-md mx-auto">Estamos carregando o mapa para seleção de localização.</p>
+      </div>
+    </div>
+  ),
+})
+
+// Componente para exibir a localização no mapa
+const GoogleMapaExibicao = dynamic(() => import("@/components/google-mapa-exibicao").then(mod => mod.default), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-muted/30 rounded-md overflow-hidden h-[200px] flex items-center justify-center">
+      <div className="text-center">
+        <div className="h-6 w-6 border-2 border-primary-sportlink border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+        <p className="text-sm text-muted-foreground">Carregando visualização do mapa...</p>
       </div>
     </div>
   ),
@@ -111,10 +127,29 @@ export default function CriarCompeticaoPage() {
   }
 
   const handleSelecionarLocalizacao = (lat: number, lng: number, endereco: string) => {
-    setLatitude(lat)
-    setLongitude(lng)
-    if (endereco) setEndereco(endereco)
-    setIsMapaAberto(false)
+    // Registrar que a localização foi selecionada
+    console.log(`Localização selecionada: ${endereco} (${lat}, ${lng})`);
+    
+    // Atualizar os estados com os dados da localização
+    setLatitude(lat);
+    setLongitude(lng);
+    if (endereco) setEndereco(endereco);
+    
+    // Aguardar o próximo ciclo de renderização para fechar o diálogo
+    requestAnimationFrame(() => {
+      // Fechar o diálogo
+      setIsMapaAberto(false);
+      console.log("Diálogo fechado após seleção de localização");
+      
+      // Aguardar um momento extra para garantir que os estados estejam atualizados
+      setTimeout(() => {
+        console.log("Estados atualizados após seleção:", {
+          latitude: lat,
+          longitude: lng,
+          endereco: endereco
+        });
+      }, 300);
+    });
   }
 
   const validarFormulario = () => {
@@ -192,24 +227,22 @@ export default function CriarCompeticaoPage() {
     setIsLoading(true)
 
     try {
-      // Simulando criação da competição
-      const novaCompeticao = {
-        id: Date.now(),
+      // Preparar dados para API
+      const competicaoData = {
         nome,
         descricao,
         esporte,
         categoria,
         formato,
-        dataInicio: dataInicio?.toISOString(),
+        dataInicio: dataInicio?.toISOString() || "",
         dataFim: dataFim?.toISOString(),
-        dataLimiteInscricao: dataLimiteInscricao?.toISOString(),
+        dataLimiteInscricao: dataLimiteInscricao?.toISOString() || "",
         local,
         endereco,
         latitude,
         longitude,
         vagas: Number.parseInt(vagas),
         minParticipantes: Number.parseInt(minParticipantes),
-        participantes: 0,
         premio,
         taxaInscricao,
         regras: regras.filter((r) => r.trim()),
@@ -218,22 +251,65 @@ export default function CriarCompeticaoPage() {
         inscricoesAutomaticas,
         permitirEquipes,
         tamanhoEquipe: permitirEquipes ? Number.parseInt(tamanhoEquipe) : null,
-        status: "inscricoes",
-        organizador: "Usuário Atual",
-        criadoEm: new Date().toISOString(),
+        organizador_id: 1 // ID fixo para testes, em produção viria de um contexto de autenticação
+      };
+
+      // Para debug: mostra os dados que serão enviados
+      console.log("Enviando dados da competição:", competicaoData);
+
+      // Tentar criar a competição na API
+      try {
+        const responseData = await createCompeticao(competicaoData);
+        console.log("Competição criada com sucesso:", responseData);
+        
+        // Identificar o ID da competição criada
+        const competicaoId = responseData.id || Date.now();
+        
+        // Também salvar no localStorage para compatibilidade com o mock atual
+        const novaCompeticao = {
+          ...competicaoData,
+          id: competicaoId,
+          participantes: 0,
+          status: "inscricoes",
+          organizador: "Usuário Atual",
+          criadoEm: new Date().toISOString(),
+        };
+        
+        const competicoes = JSON.parse(localStorage.getItem("competicoes") || "[]");
+        competicoes.push(novaCompeticao);
+        localStorage.setItem("competicoes", JSON.stringify(competicoes));
+        
+        // Redirecionar para a página da competição criada com parâmetro de sucesso
+        router.push(`/dashboard/competicoes/${competicaoId}?recemCriada=true`);
+      } catch (apiError: any) {
+        console.error("Erro na API:", apiError);
+        
+        // Fallback para mock local se a API falhar
+        console.log("Usando fallback local...");
+        
+        const novaCompeticao = {
+          ...competicaoData,
+          id: Date.now(),
+          participantes: 0,
+          status: "inscricoes",
+          organizador: "Usuário Atual",
+          criadoEm: new Date().toISOString(),
+        };
+        
+        const competicoes = JSON.parse(localStorage.getItem("competicoes") || "[]");
+        competicoes.push(novaCompeticao);
+        localStorage.setItem("competicoes", JSON.stringify(competicoes));
+        
+        
+        // Esperar um pouco para o usuário ver a mensagem
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        
+        // Redirecionar para a página da competição criada com parâmetro de sucesso
+        router.push(`/dashboard/competicoes/${novaCompeticao.id}?recemCriada=true&localMode=true`);
       }
-
-      // Salvar no localStorage (simulando API)
-      const competicoes = JSON.parse(localStorage.getItem("competicoes") || "[]")
-      competicoes.push(novaCompeticao)
-      localStorage.setItem("competicoes", JSON.stringify(competicoes))
-
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      // Redirecionar para a página da competição criada
-      router.push(`/dashboard/competicoes/${novaCompeticao.id}`)
     } catch (err) {
       setError("Ocorreu um erro ao criar a competição. Tente novamente.")
+      console.error("Erro ao criar competição:", err);
     } finally {
       setIsLoading(false)
     }
@@ -504,46 +580,132 @@ export default function CriarCompeticaoPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="endereco">Endereço completo *</Label>
-                  <Input
-                    id="endereco"
-                    placeholder="Ex: Av. Principal, 123 - Centro"
-                    value={endereco}
-                    onChange={(e) => setEndereco(e.target.value)}
-                    disabled={isLoading}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="endereco"
+                      placeholder="Ex: Av. Principal, 123 - Centro"
+                      value={endereco}
+                      onChange={(e) => setEndereco(e.target.value)}
+                      disabled={isLoading}
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={async () => {
+                        if (endereco) {
+                          try {
+                            // Salvar o erro atual e mostrar mensagem de carregamento temporariamente
+                            setIsLoading(true);
+                            setError("Buscando localização...");
+                            
+                            console.log("Buscando endereço:", endereco);
+                            
+                            // Buscar coordenadas a partir do endereço
+                            const response = await fetch(
+                              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}`
+                            );
+                            const data = await response.json();
+                            console.log("Resposta da busca:", data);
+                            
+                            if (data && data.length > 0) {
+                              const { lat, lon, display_name } = data[0];
+                              setLatitude(Number.parseFloat(lat));
+                              setLongitude(Number.parseFloat(lon));
+                              setEndereco(display_name);
+                              setError(null);
+                              console.log(`Localização encontrada: ${display_name}`);
+                            } else {
+                              setError("Endereço não encontrado. Tente ser mais específico.");
+                            }
+                          } catch (error) {
+                            console.error("Erro ao buscar localização:", error);
+                            setError("Erro ao buscar localização. Tente novamente.");
+                          } finally {
+                            setIsLoading(false);
+                          }
+                        } else {
+                          setError("Digite um endereço para buscar a localização.");
+                        }
+                      }}
+                      disabled={isLoading || !endereco}
+                    >
+                      <MapPin className="h-4 w-4 mr-2" /> {isLoading ? "Buscando..." : "Buscar"}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Digite o endereço completo para buscar a localização ou selecione manualmente no mapa</p>
                 </div>
 
-                <Dialog open={isMapaAberto} onOpenChange={setIsMapaAberto}>
-                  <DialogTrigger asChild>
-                    <div className="border border-dashed rounded-md p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors">
-                      <MapPin className="h-8 w-8 text-muted-foreground mb-2" />
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {latitude && longitude
-                          ? "Localização selecionada. Clique para alterar."
-                          : "Selecione a localização no mapa"}
-                      </p>
-                      <Button variant="outline" size="sm" type="button" disabled={isLoading}>
-                        {latitude && longitude ? "Alterar localização" : "Abrir mapa"}
-                      </Button>
-                    </div>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-3xl">
+                {/* Botão para abrir o seletor de mapa */}
+                <div 
+                  className="border border-dashed rounded-md p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => {
+                    console.log("Abrindo seletor de mapa do Google");
+                    setIsMapaAberto(true);
+                  }}
+                >
+                  <MapPin className="h-8 w-8 text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {latitude && longitude
+                      ? "Localização selecionada. Clique para alterar."
+                      : "Selecione a localização no mapa"}
+                  </p>
+                  <Button variant="outline" size="sm" type="button" disabled={isLoading}>
+                    {latitude && longitude ? "Alterar localização" : "Abrir mapa"}
+                  </Button>
+                </div>
+                
+                {/* Diálogo para o seletor de mapa do Google */}
+                <Dialog 
+                  open={isMapaAberto} 
+                  onOpenChange={(open) => {
+                    console.log("Dialog onOpenChange:", open);
+                    if (open) {
+                      setIsMapaAberto(true);
+                      console.log("Diálogo do mapa aberto");
+                    } else {
+                      // Fechamento controlado
+                      setIsMapaAberto(false);
+                      console.log("Diálogo do mapa fechado pelo usuário");
+                    }
+                  }}
+                >
+                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Selecionar localização</DialogTitle>
                       <DialogDescription>
                         Clique no mapa para selecionar a localização exata da competição
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="h-[500px]">
-                      <SelecionarLocalizacaoMapa
-                        onSelectLocation={handleSelecionarLocalizacao}
-                        initialLocation={
-                          latitude && longitude ? { lat: latitude, lng: longitude } : { lat: -23.5505, lng: -46.6333 }
-                        }
-                      />
+                    <div className="h-[500px] w-full">
+                      {isMapaAberto && (
+                        <GoogleMapaSeletor
+                          onSelectLocation={handleSelecionarLocalizacao}
+                          initialLocation={
+                            latitude && longitude 
+                              ? { lat: latitude, lng: longitude } 
+                              : { lat: -23.5505, lng: -46.6333 }
+                          }
+                        />
+                      )}
                     </div>
                   </DialogContent>
                 </Dialog>
+
+                {latitude && longitude && endereco && (
+                  <div className="mt-4 space-y-2">
+                    <Label>Visualização da localização</Label>
+                    <GoogleMapaExibicao 
+                      latitude={latitude} 
+                      longitude={longitude} 
+                      endereco={endereco} 
+                      altura="200px"
+                    />
+                    <div className="text-xs text-muted-foreground mt-1">
+                      <p>Localização: {endereco}</p>
+                      <p>Coordenadas: {latitude.toFixed(6)}, {longitude.toFixed(6)}</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

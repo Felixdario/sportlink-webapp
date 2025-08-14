@@ -68,6 +68,10 @@ export default function LoginPage() {
       const data = await loginUser({ email, senha: password })
       localStorage.setItem("isAuthenticated", "true")
       localStorage.setItem("data", JSON.stringify(data))
+      // Armazenar o nome do usuário para exibição consistente em toda a aplicação
+      if (data.nome) {
+        localStorage.setItem("userName", data.nome)
+      }
       if (rememberMe) {
         localStorage.setItem("userEmail", email)
       } else {

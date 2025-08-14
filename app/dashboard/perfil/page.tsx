@@ -12,27 +12,189 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useAuthContext } from "@/hooks/AuthProvider"
+import api from "@/lib/api"
+import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
+
+// Mapeamento de níveis de habilidade
+const skillLevelMap: Record<string, string> = {
+  "beginner": "Iniciante",
+  "intermediate": "Intermediário", 
+  "advanced": "Avançado",
+  "professional": "Profissional"
+}
 
 export default function PerfilPage() {
+  const { user } = useAuthContext()
+  const router = useRouter()
+  const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("atividades")
   const [editMode, setEditMode] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [profileData, setProfileData] = useState<any>(null)
+  // Estado para armazenar os dados do login
+  const [userData, setUserData] = useState<any>(null)
+  const [formData, setFormData] = useState({
+    nome: "",
+    username: "",
+    email: "",
+    telefone: "",
+    localizacao: "",
+    bio: "",
+    website: "",
+    nivel: "",
+    esportePrincipal: ""
+  })
 
   useEffect(() => {
     setMounted(true)
-  }, [])
+    
+    // Verificar autenticação e carregar dados do usuário
+    const auth = localStorage.getItem("isAuthenticated")
+    if (auth !== "true") {
+      router.push("/login")
+      return
+    }
+    
+    // Carregar dados do usuário salvos no login
+    try {
+      const userDataStr = localStorage.getItem("data")
+      if (userDataStr) {
+        const parsedUserData = JSON.parse(userDataStr)
+        console.log("Dados do usuário carregados:", parsedUserData)
+        setUserData(parsedUserData)
+        
+        // Salvar o nome do usuário no localStorage para consistência com o header
+        if (parsedUserData.nome && !localStorage.getItem("userName")) {
+          localStorage.setItem("userName", parsedUserData.nome)
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao carregar dados do usuário:", error)
+    }
+    
+    // Carregar dados do perfil completo caso exista
+    try {
+      const storedProfile = localStorage.getItem("athleteProfile")
+      if (storedProfile) {
+        setProfileData(JSON.parse(storedProfile))
+      }
+    } catch (error) {
+      console.error("Erro ao carregar perfil:", error)
+    }
+  }, [router])
+  
+  // Atualizar o formData quando o usuário ou profileData mudarem
+  useEffect(() => {
+    // Obter o nome armazenado no localStorage (consistente com o header)
+    const storedName = localStorage.getItem("userName");
+    
+    // Só atualiza quando os estados necessários estiverem disponíveis
+    setFormData({
+      nome: storedName || userData?.nome || user?.name || "",
+      username: storedName ? 
+        `@${storedName.toLowerCase().replace(/\s+/g, '')}` : 
+        userData?.nome ? 
+          `@${userData.nome.toLowerCase().replace(/\s+/g, '')}` : 
+          user?.name ? `@${user.name.toLowerCase().replace(/\s+/g, '')}` : "",
+      email: userData?.email || user?.email || "",
+      telefone: profileData?.phone || "",
+      localizacao: profileData ? 
+        `${profileData.city}${profileData.state ? `, ${profileData.state}` : ""}` : 
+        "",
+      bio: profileData?.bio || "",
+      website: "",
+      nivel: profileData?.skillLevel || "",
+      esportePrincipal: profileData?.favoriteSports && profileData.favoriteSports.length > 0 ? 
+        profileData.favoriteSports[0] : ""
+    })
+  }, [user, userData, profileData])
+  
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+  
+  const handleSaveProfile = async () => {
+    setLoading(true)
+    try {
+      // Atualizar dados no localStorage (simulando API)
+      const updatedProfile = {
+        ...profileData,
+        bio: formData.bio,
+        phone: formData.telefone,
+        // Atualizar localização
+        city: formData.localizacao.split(',')[0]?.trim() || "",
+        state: formData.localizacao.split(',')[1]?.trim() || "",
+        skillLevel: formData.nivel,
+        favoriteSports: profileData?.favoriteSports || []
+      }
+      
+      // Se houver uma mudança no esporte principal
+      if (formData.esportePrincipal && 
+          (!updatedProfile.favoriteSports.includes(formData.esportePrincipal))) {
+        updatedProfile.favoriteSports = [
+          formData.esportePrincipal, 
+          ...updatedProfile.favoriteSports.filter((s: string) => s !== formData.esportePrincipal)
+        ]
+      }
+      
+      // Atualizar o nome do usuário no localStorage para consistência com o header
+      if (formData.nome) {
+        localStorage.setItem("userName", formData.nome);
+      }
+      
+      localStorage.setItem("athleteProfile", JSON.stringify(updatedProfile))
+      
+      // Atualizar dados locais
+      setProfileData(updatedProfile)
+      
+      // Simular delay de API
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      toast({
+        title: "Perfil atualizado",
+        description: "Suas informações foram salvas com sucesso.",
+        variant: "default"
+      })
+      
+      setEditMode(false)
+    } catch (error) {
+      console.error("Erro ao salvar perfil:", error)
+      toast({
+        title: "Erro ao atualizar perfil",
+        description: "Ocorreu um erro ao salvar suas informações. Tente novamente.",
+        variant: "destructive"
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
+  // Obter o nome do usuário do localStorage como fonte principal (mesma fonte que o header)
+  const userName = localStorage.getItem("userName") || "Usuário";
+  
+  // Combinar dados da autenticação com dados de perfil completo
   const usuario = {
-    nome: "Carlos Silva",
-    username: "@carlossilva",
-    email: "carlos.silva@exemplo.com",
-    telefone: "(11) 98765-4321",
-    localizacao: "São Paulo, SP",
-    esportesFavoritos: ["Futebol", "Basquete", "Tênis"],
-    nivel: "Avançado",
-    bio: "Apaixonado por esportes e sempre em busca de novos desafios. Jogo futebol desde criança e recentemente comecei a praticar basquete e tênis.",
-    avatar: "/placeholder.svg?height=150&width=150",
-    website: "carlossilva.com.br",
+    nome: userName || userData?.nome || user?.name || "Usuário",
+    username: `@${(userName || userData?.nome || user?.name || "usuario").toLowerCase().replace(/\s+/g, '')}`,
+    email: userData?.email || user?.email || "",
+    telefone: profileData?.phone || "(Não informado)",
+    localizacao: profileData ? 
+      `${profileData.city}${profileData.state ? `, ${profileData.state}` : ""}` : 
+      "(Não informada)",
+    esportesFavoritos: profileData?.favoriteSports || ["Adicione seus esportes favoritos"],
+    nivel: profileData?.skillLevel ? 
+      skillLevelMap[profileData.skillLevel] || "Não informado" : 
+      "Não informado",
+    bio: profileData?.bio || "Edite seu perfil para adicionar uma biografia.",
+    avatar: "/placeholder-user.jpg",
+    website: "",
+    id: userData?.id || user?.id
   }
 
   const atividades = [
@@ -83,7 +245,36 @@ export default function PerfilPage() {
     },
   ]
 
+
+
   if (!mounted) {
+    return null
+  }
+  
+  // Verificar se o usuário está autenticado e se os dados estão sendo carregados
+  const isAuthenticated = localStorage.getItem("isAuthenticated") === "true"
+  // Verificar se temos pelo menos o nome do usuário no localStorage
+  const hasUserName = !!localStorage.getItem("userName")
+  
+  // Mostrar loading enquanto os dados estão sendo carregados, apenas se não tivermos nenhum dado
+  if (mounted && (!userData && !hasUserName && isAuthenticated)) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card className="p-8">
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <div className="animate-pulse rounded-full h-32 w-32 bg-muted"></div>
+            <div className="animate-pulse h-8 w-48 bg-muted rounded"></div>
+            <div className="animate-pulse h-4 w-32 bg-muted rounded"></div>
+            <p className="text-muted-foreground text-center">Carregando dados do perfil...</p>
+          </div>
+        </Card>
+      </div>
+    )
+  }
+  
+  // Se não estiver autenticado e já estiver montado, mostrar mensagem ou redirecionar
+  if (mounted && !isAuthenticated) {
+    router.push("/login")
     return null
   }
 
@@ -98,10 +289,13 @@ export default function PerfilPage() {
             </Button>
           )}
         </div>
-        <CardContent className="px-6 pb-6">
-          <div className="flex flex-col md:flex-row items-start md:items-end -mt-16 mb-4">
+        <CardContent className="px-6 pb-6 pt-20"> {/* Adicionado padding-top para dar mais espaço */}
+          <div className="flex flex-col md:flex-row items-start md:items-center -mt-24 mb-4"> {/* Ajustado margin-top e alinhamento */}
             <div className="relative">
               <Avatar className="w-32 h-32 border-4 border-background shadow-md">
+                {usuario.avatar ? (
+                  <AvatarImage src={usuario.avatar} alt={usuario.nome} />
+                ) : null}
                 <AvatarFallback>
                   {usuario.nome
                     .split(" ")
@@ -118,16 +312,37 @@ export default function PerfilPage() {
             <div className="mt-4 md:mt-0 md:ml-4">
               <h2 className="text-2xl font-bold">{usuario.nome}</h2>
               <p className="text-muted-foreground">{usuario.username}</p>
+              {(user?.isEmailVerified || userData?.email_verificado) ? (
+                <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-green-200 dark:border-green-800 mt-1">
+                  Email verificado
+                </Badge>
+              ) : (userData || user) ? (
+                <Badge variant="outline" className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800 mt-1">
+                  Email não verificado
+                </Badge>
+              ) : null}
             </div>
             <Button
               className="mt-4 md:mt-0 md:ml-auto flex items-center gap-2"
               variant={editMode ? "default" : "outline"}
-              onClick={() => setEditMode(!editMode)}
+              onClick={() => {
+                if (editMode) {
+                  // Salvar alterações
+                  handleSaveProfile();
+                } else {
+                  setEditMode(true);
+                }
+              }}
+              disabled={loading}
             >
               {editMode ? (
                 <>
-                  <Save className="w-4 h-4" />
-                  Salvar alterações
+                  {loading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  {loading ? "Salvando..." : "Salvar alterações"}
                 </>
               ) : (
                 <>
@@ -143,45 +358,84 @@ export default function PerfilPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="nome">Nome completo</Label>
-                  <Input id="nome" defaultValue={usuario.nome} />
+                  <Input 
+                    id="nome" 
+                    value={usuario.nome} 
+                    onChange={(e) => handleInputChange("nome", e.target.value)}
+                    disabled={(user?.id || userData?.id) ? true : false} // Desabilitar edição do nome se for um usuário real
+                  />
+                  {(user?.id || userData?.id) && <p className="text-xs text-muted-foreground mt-1">Nome não pode ser alterado</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="username">Nome de usuário</Label>
-                  <Input id="username" defaultValue={usuario.username} />
+                  <Input 
+                    id="username" 
+                    value={usuario.username} 
+                    onChange={(e) => handleInputChange("username", e.target.value)}
+                    disabled // Nome de usuário gerado automaticamente
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" defaultValue={usuario.email} />
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    value={usuario.email} 
+                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    disabled={(user?.id || userData?.id) ? true : false} // Desabilitar edição do email se for um usuário real
+                  />
+                  {(user?.id || userData?.id) && <p className="text-xs text-muted-foreground mt-1">Email não pode ser alterado</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="telefone">Telefone</Label>
-                  <Input id="telefone" defaultValue={usuario.telefone} />
+                  <Input 
+                    id="telefone" 
+                    value={formData.telefone} 
+                    onChange={(e) => handleInputChange("telefone", e.target.value)}
+                    placeholder="(11) 98765-4321"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="localizacao">Localização</Label>
-                  <Input id="localizacao" defaultValue={usuario.localizacao} />
+                  <Input 
+                    id="localizacao" 
+                    value={formData.localizacao} 
+                    onChange={(e) => handleInputChange("localizacao", e.target.value)}
+                    placeholder="Cidade, UF"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="website">Website</Label>
-                  <Input id="website" defaultValue={usuario.website} />
+                  <Input 
+                    id="website" 
+                    value={formData.website} 
+                    onChange={(e) => handleInputChange("website", e.target.value)}
+                    placeholder="seusite.com.br"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="nivel">Nível</Label>
-                  <Select defaultValue={usuario.nivel}>
+                  <Select 
+                    value={formData.nivel} 
+                    onValueChange={(value) => handleInputChange("nivel", value)}
+                  >
                     <SelectTrigger id="nivel">
                       <SelectValue placeholder="Selecione seu nível" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Iniciante">Iniciante</SelectItem>
-                      <SelectItem value="Intermediário">Intermediário</SelectItem>
-                      <SelectItem value="Avançado">Avançado</SelectItem>
-                      <SelectItem value="Profissional">Profissional</SelectItem>
+                      <SelectItem value="beginner">Iniciante</SelectItem>
+                      <SelectItem value="intermediate">Intermediário</SelectItem>
+                      <SelectItem value="advanced">Avançado</SelectItem>
+                      <SelectItem value="professional">Profissional</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="esporte-principal">Esporte principal</Label>
-                  <Select defaultValue={usuario.esportesFavoritos[0]}>
+                  <Select 
+                    value={formData.esportePrincipal}
+                    onValueChange={(value) => handleInputChange("esportePrincipal", value)}
+                  >
                     <SelectTrigger id="esporte-principal">
                       <SelectValue placeholder="Selecione seu esporte principal" />
                     </SelectTrigger>
@@ -190,32 +444,50 @@ export default function PerfilPage() {
                       <SelectItem value="Basquete">Basquete</SelectItem>
                       <SelectItem value="Vôlei">Vôlei</SelectItem>
                       <SelectItem value="Tênis">Tênis</SelectItem>
+                      <SelectItem value="Padel">Padel</SelectItem>
+                      <SelectItem value="Squash">Squash</SelectItem>
+                      <SelectItem value="Futsal">Futsal</SelectItem>
+                      <SelectItem value="Handebol">Handebol</SelectItem>
+                      <SelectItem value="Beach Tennis">Beach Tennis</SelectItem>
+                      <SelectItem value="Badminton">Badminton</SelectItem>
+                      <SelectItem value="Ping Pong">Ping Pong</SelectItem>
                       <SelectItem value="Natação">Natação</SelectItem>
-                      <SelectItem value="Corrida">Corrida</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bio">Biografia</Label>
-                <Textarea id="bio" rows={4} defaultValue={usuario.bio} />
+                <Textarea 
+                  id="bio" 
+                  rows={4} 
+                  value={formData.bio} 
+                  onChange={(e) => handleInputChange("bio", e.target.value)}
+                  placeholder="Conte sobre você, seus interesses esportivos..."
+                />
               </div>
             </div>
           ) : (
             <>
               <div className="flex flex-wrap gap-4 mb-4">
-                <div className="flex items-center text-muted-foreground">
-                  <MapPin className="w-4 h-4 mr-2" />
-                  <p>{usuario.localizacao}</p>
-                </div>
-                <div className="flex items-center text-muted-foreground">
-                  <Mail className="w-4 h-4 mr-2" />
-                  <p>{usuario.email}</p>
-                </div>
-                <div className="flex items-center text-muted-foreground">
-                  <Phone className="w-4 h-4 mr-2" />
-                  <p>{usuario.telefone}</p>
-                </div>
+                {usuario.localizacao && usuario.localizacao !== "(Não informada)" && (
+                  <div className="flex items-center text-muted-foreground">
+                    <MapPin className="w-4 h-4 mr-2" />
+                    <p>{usuario.localizacao}</p>
+                  </div>
+                )}
+                {usuario.email && (
+                  <div className="flex items-center text-muted-foreground">
+                    <Mail className="w-4 h-4 mr-2" />
+                    <p>{usuario.email}</p>
+                  </div>
+                )}
+                {usuario.telefone && usuario.telefone !== "(Não informado)" && (
+                  <div className="flex items-center text-muted-foreground">
+                    <Phone className="w-4 h-4 mr-2" />
+                    <p>{usuario.telefone}</p>
+                  </div>
+                )}
                 {usuario.website && (
                   <div className="flex items-center text-muted-foreground">
                     <Globe className="w-4 h-4 mr-2" />
@@ -229,20 +501,43 @@ export default function PerfilPage() {
                     </a>
                   </div>
                 )}
+                
+                {/* Mostrar nível se estiver disponível */}
+                {usuario.nivel && usuario.nivel !== "Não informado" && (
+                  <div className="flex items-center text-muted-foreground">
+                    <Trophy className="w-4 h-4 mr-2" />
+                    <p>Nível: {usuario.nivel}</p>
+                  </div>
+                )}
               </div>
-              <p className="text-foreground mb-4">{usuario.bio}</p>
+              
+              <p className="text-foreground mb-4">
+                {usuario.bio || (
+                  <span className="text-muted-foreground italic">
+                    Clique em "Editar perfil" para adicionar sua biografia.
+                  </span>
+                )}
+              </p>
+              
               <div>
                 <p className="text-sm font-medium text-foreground mb-2">Esportes favoritos:</p>
                 <div className="flex flex-wrap gap-2">
-                  {usuario.esportesFavoritos.map((esporte, index) => (
-                    <Badge
-                      key={index}
-                      variant="outline"
-                      className="bg-primary-sportlink/10 text-primary-sportlink border-primary-sportlink/20"
-                    >
-                      {esporte}
-                    </Badge>
-                  ))}
+                  {usuario.esportesFavoritos && usuario.esportesFavoritos.length > 0 && 
+                   usuario.esportesFavoritos[0] !== "Adicione seus esportes favoritos" ? (
+                    usuario.esportesFavoritos.map((esporte, index) => (
+                      <Badge
+                        key={index}
+                        variant="outline"
+                        className="bg-primary-sportlink/10 text-primary-sportlink border-primary-sportlink/20"
+                      >
+                        {esporte}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-muted-foreground italic">
+                      Edite seu perfil para adicionar esportes favoritos.
+                    </span>
+                  )}
                 </div>
               </div>
             </>
