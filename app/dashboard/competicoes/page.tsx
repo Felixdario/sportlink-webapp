@@ -16,6 +16,8 @@ import {
   Flag,
   Play,
   UserCheck,
+  Users,
+  DollarSign,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,9 +27,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
-// Importações corrigidas do date-fns
-import format from "date-fns/format"
-import ptBR from "date-fns/locale/pt-BR"
+import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
 
 interface Competicao {
   id: number
@@ -56,6 +57,24 @@ interface Competicao {
   imagem?: string
 }
 
+interface PartidaAmistosa {
+  id: number
+  nome: string
+  descricao: string
+  esporte: string
+  dataInicio: string
+  local: string
+  endereco: string
+  custoQuadra: number
+  participantesConfirmados: number
+  vagas: number
+  custoParticipante: number
+  status: "confirmada" | "pendente" | "finalizada" | "cancelada"
+  organizador: string
+  criadoEm: string
+  participantes?: string[]
+}
+
 const competicoesExemplo: Competicao[] = [
   {
     id: 1,
@@ -66,8 +85,8 @@ const competicoesExemplo: Competicao[] = [
     categoria: "Amador",
     formato: "Eliminatória",
     dataInicio: "2025-02-15T09:00:00",
-    dataFim: "2025-11-16T18:00:00",
-    dataLimiteInscricao: "2025-09-10T23:59:59",
+    dataFim: "2025-02-16T18:00:00",
+    dataLimiteInscricao: "2025-02-10T23:59:59",
     local: "Centro Esportivo Municipal",
     endereco: "Rua das Palmeiras, 123 - Centro",
     vagas: 16,
@@ -212,20 +231,120 @@ const competicoesExemplo: Competicao[] = [
   },
 ]
 
+const partidasAmistosasExemplo: PartidaAmistosa[] = [
+  {
+    id: 101,
+    nome: "Pelada Quinta à Noite - Futebol 5",
+    descricao: "Partida amistosa de futebol 5 na quinta à noite. Bem-vindo a todos os níveis!",
+    esporte: "Futebol",
+    dataInicio: "2025-01-16T19:00:00",
+    local: "Quadra Poliesportiva Central",
+    endereco: "Av. Principal, 456 - Bairro Novo",
+    custoQuadra: 150,
+    participantesConfirmados: 7,
+    vagas: 10,
+    custoParticipante: 15,
+    status: "confirmada",
+    organizador: "João Silva",
+    criadoEm: "2025-01-14T10:30:00",
+    participantes: ["João Silva", "Carlos", "Lucas", "Pedro", "Rafael", "Gustavo", "Felipe"],
+  },
+  {
+    id: 102,
+    nome: "Jogo de Basquete - Sábado Manhã",
+    descricao: "Partida de basquete amistosa para relaxar no sábado. Venha se divertir!",
+    esporte: "Basquete",
+    dataInicio: "2025-01-18T09:00:00",
+    local: "Quadra Coberta Downtown",
+    endereco: "Rua dos Esportes, 789 - Centro",
+    custoQuadra: 120,
+    participantesConfirmados: 10,
+    vagas: 12,
+    custoParticipante: 12,
+    status: "confirmada",
+    organizador: "Ana Oliveira",
+    criadoEm: "2025-01-13T14:15:00",
+    participantes: [
+      "Ana Oliveira",
+      "Bruno",
+      "Marcelo",
+      "Diego",
+      "Julio",
+      "Rodrigo",
+      "Thiago",
+      "Fernando",
+      "Paulo",
+      "Fabio",
+    ],
+  },
+  {
+    id: 103,
+    nome: "Vôlei Recreativo - Domingo",
+    descricao: "Vôlei recreativo entre amigos. Sem competição, apenas diversão!",
+    esporte: "Vôlei",
+    dataInicio: "2025-01-19T16:00:00",
+    local: "Arena de Esportes Beach",
+    endereco: "Orla da Praia, s/n - Beira Mar",
+    custoQuadra: 100,
+    participantesConfirmados: 6,
+    vagas: 12,
+    custoParticipante: 9,
+    status: "pendente",
+    organizador: "Marina Costa",
+    criadoEm: "2025-01-15T11:00:00",
+    participantes: ["Marina Costa", "Amanda", "Beatriz", "Camila", "Débora", "Élisa"],
+  },
+  {
+    id: 104,
+    nome: "Futsal Amigável - Quarta-feira",
+    descricao: "Partida de futsal entre amigos para manter a forma.",
+    esporte: "Futsal",
+    dataInicio: "2025-01-17T20:00:00",
+    local: "Ginásio Municipal",
+    endereco: "Rua das Palmeiras, 123 - Centro",
+    custoQuadra: 130,
+    participantesConfirmados: 8,
+    vagas: 10,
+    custoParticipante: 13,
+    status: "confirmada",
+    organizador: "Roberto Mendes",
+    criadoEm: "2025-01-14T16:20:00",
+    participantes: ["Roberto Mendes", "Andrei", "Beto", "Claudio", "Dudu", "Emerson", "Fabio", "Gerson"],
+  },
+  {
+    id: 105,
+    nome: "Partida de Tênis - Dupla Mista",
+    descricao: "Partida de tênis em duplas. Casais bem-vindos!",
+    esporte: "Tênis",
+    dataInicio: "2025-01-20T14:00:00",
+    local: "Clube de Tênis Elite",
+    endereco: "Rua dos Esportes, 789 - Vila Olímpica",
+    custoQuadra: 80,
+    participantesConfirmados: 4,
+    vagas: 8,
+    custoParticipante: 10,
+    status: "pendente",
+    organizador: "Patricia Silva",
+    criadoEm: "2025-01-15T09:45:00",
+    participantes: ["Patricia Silva", "Ricardo", "Sophia", "Victor"],
+  },
+]
+
 export default function CompeticoesPage() {
   const router = useRouter()
   const [competicoes, setCompeticoes] = useState<Competicao[]>([])
+  const [partidasAmistosas, setPartidasAmistosas] = useState<PartidaAmistosa[]>([])
   const [filtroEsporte, setFiltroEsporte] = useState<string>("todos")
   const [filtroStatus, setFiltroStatus] = useState<string>("todos")
   const [busca, setBusca] = useState("")
-  const [tabAtiva, setTabAtiva] = useState("proximas")
+  const [tabAtiva, setTabAtiva] = useState("competicoes")
+  const [abaBotoes, setAbaBotoes] = useState("proximas")
 
   useEffect(() => {
     // Carregar competições do localStorage ou usar exemplos
     const competicoesStorage = localStorage.getItem("competicoes")
     if (competicoesStorage) {
       const competicoesExistentes = JSON.parse(competicoesStorage)
-      // Se não há competições ou são muito poucas, adicionar exemplos
       if (competicoesExistentes.length < 3) {
         const competicoesCompletas = [...competicoesExistentes, ...competicoesExemplo]
         localStorage.setItem("competicoes", JSON.stringify(competicoesCompletas))
@@ -234,11 +353,52 @@ export default function CompeticoesPage() {
         setCompeticoes(competicoesExistentes)
       }
     } else {
-      // Primeira vez, salvar exemplos
       localStorage.setItem("competicoes", JSON.stringify(competicoesExemplo))
       setCompeticoes(competicoesExemplo)
     }
+
+    const partidasStorage = localStorage.getItem("partidasAmistosas")
+    if (partidasStorage) {
+      const partidasExistentes = JSON.parse(partidasStorage)
+      if (partidasExistentes.length < 3) {
+        const partidasCompletas = [...partidasExistentes, ...partidasAmistosasExemplo]
+        localStorage.setItem("partidasAmistosas", JSON.stringify(partidasCompletas))
+        setPartidasAmistosas(partidasCompletas)
+      } else {
+        setPartidasAmistosas(partidasExistentes)
+      }
+    } else {
+      localStorage.setItem("partidasAmistosas", JSON.stringify(partidasAmistosasExemplo))
+      setPartidasAmistosas(partidasAmistosasExemplo)
+    }
   }, [])
+
+  const partidasFiltradas = partidasAmistosas.filter((partida) => {
+    const matchBusca =
+      partida.nome.toLowerCase().includes(busca.toLowerCase()) ||
+      partida.esporte.toLowerCase().includes(busca.toLowerCase()) ||
+      partida.local.toLowerCase().includes(busca.toLowerCase())
+
+    const matchEsporte = filtroEsporte === "todos" || partida.esporte === filtroEsporte
+    const matchStatus = filtroStatus === "todos" || partida.status === filtroStatus
+
+    const matchTab = (() => {
+      switch (abaBotoes) {
+        case "proximas":
+          return partida.status === "confirmada" || partida.status === "pendente"
+        case "confirmadas":
+          return partida.status === "confirmada"
+        case "pendentes":
+          return partida.status === "pendente"
+        case "finalizadas":
+          return partida.status === "finalizada"
+        default:
+          return true
+      }
+    })()
+
+    return matchBusca && matchEsporte && matchStatus && matchTab
+  })
 
   const competicoesFiltradas = competicoes.filter((competicao) => {
     const matchBusca =
@@ -250,7 +410,7 @@ export default function CompeticoesPage() {
     const matchStatus = filtroStatus === "todos" || competicao.status === filtroStatus
 
     const matchTab = (() => {
-      switch (tabAtiva) {
+      switch (abaBotoes) {
         case "proximas":
           return competicao.status === "inscricoes" || competicao.status === "andamento"
         case "inscricoes":
@@ -267,14 +427,22 @@ export default function CompeticoesPage() {
     return matchBusca && matchEsporte && matchStatus && matchTab
   })
 
-  const esportesDisponiveis = [...new Set(competicoes.map((c) => c.esporte))]
+  const esportesDisponiveis = [...new Set([...competicoes, ...partidasAmistosas].map((c) => c.esporte))]
 
   const handleVerCompeticao = (id: number) => {
     router.push(`/dashboard/competicoes/${id}`)
   }
 
+  const handleVerPartida = (id: number) => {
+    router.push(`/dashboard/competicoes/partidas/${id}`)
+  }
+
   const handleCriarCompeticao = () => {
     router.push("/dashboard/competicoes/criar")
+  }
+
+  const handleCriarPartida = () => {
+    router.push("/dashboard/competicoes/partidas/criar")
   }
 
   const getStatusBadge = (status: string) => {
@@ -285,8 +453,15 @@ export default function CompeticoesPage() {
         return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Em Andamento</Badge>
       case "finalizado":
         return <Badge className="bg-gray-100 text-gray-800 border-gray-200">Finalizado</Badge>
+      case "confirmada":
+        return <Badge className="bg-green-100 text-green-800 border-green-200">Confirmada</Badge>
+      case "pendente":
+        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Pendente</Badge>
+      case "finalizada": // This case was duplicated, assuming it refers to 'finalizada' status for matches.
+        return <Badge className="bg-gray-100 text-gray-800 border-gray-200">Finalizada</Badge>
       case "cancelado":
-        return <Badge variant="destructive">Cancelado</Badge>
+      case "cancelada":
+        return <Badge variant="destructive">Cancelada</Badge>
       default:
         return <Badge variant="secondary">{status}</Badge>
     }
@@ -295,10 +470,13 @@ export default function CompeticoesPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "inscricoes":
+      case "confirmada":
         return <UserCheck className="h-4 w-4" />
       case "andamento":
+      case "pendente":
         return <Play className="h-4 w-4" />
       case "finalizado":
+      case "finalizada":
         return <Flag className="h-4 w-4" />
       default:
         return <Clock className="h-4 w-4" />
@@ -311,18 +489,118 @@ export default function CompeticoesPage() {
     setBusca("")
   }
 
+  const renderPartidaCard = (partida: PartidaAmistosa) => (
+    <Card
+      key={partida.id}
+      className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02]"
+      onClick={() => handleVerPartida(partida.id)}
+    >
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {getStatusIcon(partida.status)}
+            {getStatusBadge(partida.status)}
+          </div>
+          <Badge
+            variant="outline"
+            className="bg-primary-sportlink/10 text-primary-sportlink border-primary-sportlink/20"
+          >
+            <Users className="h-3 w-3 mr-1" />
+            Amistosa
+          </Badge>
+        </div>
+        <CardTitle className="text-lg leading-tight">{partida.nome}</CardTitle>
+        <CardDescription className="line-clamp-2">{partida.descricao}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Trophy className="h-4 w-4" />
+          <span>{partida.esporte}</span>
+        </div>
+
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Calendar className="h-4 w-4" />
+          <span>{format(new Date(partida.dataInicio), "PPP", { locale: ptBR })}</span>
+          <span>•</span>
+          <Clock className="h-4 w-4" />
+          <span>{format(new Date(partida.dataInicio), "HH:mm")}</span>
+        </div>
+
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <MapPin className="h-4 w-4" />
+          <span className="truncate">{partida.local}</span>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Participantes</span>
+            <span className="font-medium">
+              {partida.participantesConfirmados}/{partida.vagas}
+            </span>
+          </div>
+          <Progress value={(partida.participantesConfirmados / partida.vagas) * 100} className="h-2" />
+        </div>
+
+        <div className="flex items-center gap-2 text-sm bg-blue-50 p-3 rounded-lg border border-blue-200">
+          <DollarSign className="h-4 w-4 text-blue-600" />
+          <div className="flex-1">
+            <span className="text-blue-700 font-medium">
+              Custo: R$ {partida.custoParticipante.toFixed(2)} por pessoa
+            </span>
+            <span className="text-xs text-blue-600 block">
+              Quadra: R$ {partida.custoQuadra} ÷ {partida.participantesConfirmados} participantes
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center gap-2">
+            <Avatar className="h-6 w-6">
+              <AvatarFallback className="text-xs">
+                {partida.organizador
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-sm text-muted-foreground">{partida.organizador}</span>
+          </div>
+          <Button
+            size="sm"
+            variant={partida.status === "confirmada" || partida.status === "pendente" ? "default" : "outline"}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleVerPartida(partida.id)
+            }}
+          >
+            Ver detalhes
+            <ChevronRight className="h-3 w-3 ml-1" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Competições</h1>
-          <p className="text-muted-foreground">Encontre e participe de competições esportivas na sua região</p>
+          <h1 className="text-3xl font-bold">Competições e Partidas</h1>
+          <p className="text-muted-foreground">
+            Encontre e participe de competições e partidas amistosas na sua região
+          </p>
         </div>
-        <Button onClick={handleCriarCompeticao} className="bg-primary-sportlink hover:bg-primary-sportlink/90">
-          <Plus className="h-4 w-4 mr-2" />
-          Criar Competição
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleCriarCompeticao} className="bg-primary-sportlink hover:bg-primary-sportlink/90">
+            <Plus className="h-4 w-4 mr-2" />
+            Competição
+          </Button>
+          <Button onClick={handleCriarPartida} variant="outline">
+            <Plus className="h-4 w-4 mr-2" />
+            Partida Amistosa
+          </Button>
+        </div>
       </div>
 
       {/* Filtros */}
@@ -333,7 +611,7 @@ export default function CompeticoesPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="Buscar competições..."
+                  placeholder="Buscar..."
                   value={busca}
                   onChange={(e) => setBusca(e.target.value)}
                   className="pl-10"
@@ -353,17 +631,6 @@ export default function CompeticoesPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os status</SelectItem>
-                <SelectItem value="inscricoes">Inscrições Abertas</SelectItem>
-                <SelectItem value="andamento">Em Andamento</SelectItem>
-                <SelectItem value="finalizado">Finalizadas</SelectItem>
-              </SelectContent>
-            </Select>
             {(filtroEsporte !== "todos" || filtroStatus !== "todos" || busca) && (
               <Button variant="outline" onClick={limparFiltros}>
                 <Filter className="h-4 w-4 mr-2" />
@@ -374,133 +641,194 @@ export default function CompeticoesPage() {
         </CardContent>
       </Card>
 
-      {/* Tabs */}
+      {/* Tabs Principais */}
       <Tabs value={tabAtiva} onValueChange={setTabAtiva} className="mb-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="proximas">Próximas</TabsTrigger>
-          <TabsTrigger value="inscricoes">Inscrições</TabsTrigger>
-          <TabsTrigger value="andamento">Em Andamento</TabsTrigger>
-          <TabsTrigger value="finalizadas">Finalizadas</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="competicoes">Competições Oficiais</TabsTrigger>
+          <TabsTrigger value="amistosas">Partidas Amistosas</TabsTrigger>
         </TabsList>
 
-        <TabsContent value={tabAtiva} className="mt-6">
-          {competicoesFiltradas.length === 0 ? (
-            <div className="text-center py-12">
-              <Trophy className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">
-                {busca || filtroEsporte !== "todos" || filtroStatus !== "todos"
-                  ? "Nenhuma competição encontrada"
-                  : "Nenhuma competição disponível"}
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                {busca || filtroEsporte !== "todos" || filtroStatus !== "todos"
-                  ? "Tente ajustar os filtros para encontrar competições."
-                  : "Seja o primeiro a criar uma competição!"}
-              </p>
-              <div className="flex gap-2 justify-center">
-                {(busca || filtroEsporte !== "todos" || filtroStatus !== "todos") && (
-                  <Button variant="outline" onClick={limparFiltros}>
-                    Limpar filtros
-                  </Button>
-                )}
-                <Button onClick={handleCriarCompeticao}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Criar Competição
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {competicoesFiltradas.map((competicao) => (
-                <Card
-                  key={competicao.id}
-                  className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02]"
-                  onClick={() => handleVerCompeticao(competicao.id)}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {getStatusIcon(competicao.status)}
-                        {getStatusBadge(competicao.status)}
-                      </div>
-                    </div>
-                    <CardTitle className="text-lg leading-tight">{competicao.nome}</CardTitle>
-                    <CardDescription className="line-clamp-2">{competicao.descricao}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Trophy className="h-4 w-4" />
-                      <span>{competicao.esporte}</span>
-                      <span>•</span>
-                      <span>{competicao.categoria}</span>
-                    </div>
+        {/* Tab Competições */}
+        <TabsContent value="competicoes" className="mt-6">
+          <Tabs value={abaBotoes} onValueChange={setAbaBotoes} className="mb-6">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="proximas">Próximas</TabsTrigger>
+              <TabsTrigger value="inscricoes">Inscrições</TabsTrigger>
+              <TabsTrigger value="andamento">Em Andamento</TabsTrigger>
+              <TabsTrigger value="finalizadas">Finalizadas</TabsTrigger>
+            </TabsList>
 
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      <span>{format(new Date(competicao.dataInicio), "PPP", { locale: ptBR })}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      <span className="truncate">{competicao.local}</span>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Participantes</span>
-                        <span className="font-medium">
-                          {competicao.participantes}/{competicao.vagas}
-                        </span>
-                      </div>
-                      <Progress value={(competicao.participantes / competicao.vagas) * 100} className="h-2" />
-                    </div>
-
-                    {competicao.premio && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Award className="h-4 w-4 text-yellow-500" />
-                        <span className="font-medium text-primary-sportlink">{competicao.premio}</span>
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between pt-2">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
-                          <AvatarFallback className="text-xs">
-                            {competicao.organizador
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm text-muted-foreground">{competicao.organizador}</span>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant={competicao.status === "inscricoes" ? "default" : "outline"}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleVerCompeticao(competicao.id)
-                        }}
-                      >
-                        {competicao.status === "inscricoes" ? "Participar" : "Ver detalhes"}
-                        <ChevronRight className="h-3 w-3 ml-1" />
+            <TabsContent value={abaBotoes} className="mt-6">
+              {competicoesFiltradas.length === 0 ? (
+                <div className="text-center py-12">
+                  <Trophy className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">
+                    {busca || filtroEsporte !== "todos" || filtroStatus !== "todos"
+                      ? "Nenhuma competição encontrada"
+                      : "Nenhuma competição disponível"}
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    {busca || filtroEsporte !== "todos" || filtroStatus !== "todos"
+                      ? "Tente ajustar os filtros para encontrar competições."
+                      : "Seja o primeiro a criar uma competição!"}
+                  </p>
+                  <div className="flex gap-2 justify-center">
+                    {(busca || filtroEsporte !== "todos" || filtroStatus !== "todos") && (
+                      <Button variant="outline" onClick={limparFiltros}>
+                        Limpar filtros
                       </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+                    )}
+                    <Button onClick={handleCriarCompeticao}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Criar Competição
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {competicoesFiltradas.map((competicao) => (
+                    <Card
+                      key={competicao.id}
+                      className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02]"
+                      onClick={() => handleVerCompeticao(competicao.id)}
+                    >
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {getStatusIcon(competicao.status)}
+                            {getStatusBadge(competicao.status)}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                            <span className="text-xs text-muted-foreground">4.5</span>
+                          </div>
+                        </div>
+                        <CardTitle className="text-lg leading-tight">{competicao.nome}</CardTitle>
+                        <CardDescription className="line-clamp-2">{competicao.descricao}</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Trophy className="h-4 w-4" />
+                          <span>{competicao.esporte}</span>
+                          <span>•</span>
+                          <span>{competicao.categoria}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          <span>{format(new Date(competicao.dataInicio), "PPP", { locale: ptBR })}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <MapPin className="h-4 w-4" />
+                          <span className="truncate">{competicao.local}</span>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Participantes</span>
+                            <span className="font-medium">
+                              {competicao.participantes}/{competicao.vagas}
+                            </span>
+                          </div>
+                          <Progress value={(competicao.participantes / competicao.vagas) * 100} className="h-2" />
+                        </div>
+
+                        {competicao.premio && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Award className="h-4 w-4 text-yellow-500" />
+                            <span className="font-medium text-primary-sportlink">{competicao.premio}</span>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between pt-2">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-6 w-6">
+                              <AvatarFallback className="text-xs">
+                                {competicao.organizador
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm text-muted-foreground">{competicao.organizador}</span>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant={competicao.status === "inscricoes" ? "default" : "outline"}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleVerCompeticao(competicao.id)
+                            }}
+                          >
+                            {competicao.status === "inscricoes" ? "Participar" : "Ver detalhes"}
+                            <ChevronRight className="h-3 w-3 ml-1" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
+
+        {/* Tab Partidas Amistosas */}
+        <TabsContent value="amistosas" className="mt-6">
+          <Tabs value={abaBotoes} onValueChange={setAbaBotoes} className="mb-6">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="proximas">Próximas</TabsTrigger>
+              <TabsTrigger value="confirmadas">Confirmadas</TabsTrigger>
+              <TabsTrigger value="pendentes">Pendentes</TabsTrigger>
+              <TabsTrigger value="finalizadas">Finalizadas</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value={abaBotoes} className="mt-6">
+              {partidasFiltradas.length === 0 ? (
+                <div className="text-center py-12">
+                  <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">
+                    {busca || filtroEsporte !== "todos" || filtroStatus !== "todos"
+                      ? "Nenhuma partida encontrada"
+                      : "Nenhuma partida amistosa disponível"}
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    {busca || filtroEsporte !== "todos" || filtroStatus !== "todos"
+                      ? "Tente ajustar os filtros."
+                      : "Seja o primeiro a criar uma partida amistosa!"}
+                  </p>
+                  <div className="flex gap-2 justify-center">
+                    {(busca || filtroEsporte !== "todos" || filtroStatus !== "todos") && (
+                      <Button variant="outline" onClick={limparFiltros}>
+                        Limpar filtros
+                      </Button>
+                    )}
+                    <Button onClick={handleCriarPartida}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Criar Partida Amistosa
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {partidasFiltradas.map((partida) => renderPartidaCard(partida))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </TabsContent>
       </Tabs>
 
       {/* Estatísticas */}
       {competicoes.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-8">
           <Card>
             <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-primary-sportlink">{competicoes.length}</div>
-              <div className="text-sm text-muted-foreground">Total de Competições</div>
+              <div className="text-2xl font-bold text-primary-sportlink">
+                {competicoes.length + partidasAmistosas.length}
+              </div>
+              <div className="text-sm text-muted-foreground">Total de Eventos</div>
             </CardContent>
           </Card>
           <Card>
@@ -521,8 +849,17 @@ export default function CompeticoesPage() {
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-purple-600">
+                {partidasAmistosas.filter((p) => p.status === "confirmada").length}
+              </div>
+              <div className="text-sm text-muted-foreground">Partidas Confirmadas</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-gray-600">
-                {competicoes.filter((c) => c.status === "finalizado").length}
+                {competicoes.filter((c) => c.status === "finalizado").length +
+                  partidasAmistosas.filter((p) => p.status === "finalizada").length}
               </div>
               <div className="text-sm text-muted-foreground">Finalizadas</div>
             </CardContent>
