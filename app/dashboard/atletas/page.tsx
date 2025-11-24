@@ -21,8 +21,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 export default function AtletasPage() {
   const [mounted, setMounted] = useState(false)
-  const [filtroEsporte, setFiltroEsporte] = useState("")
-  const [filtroLocalizacao, setFiltroLocalizacao] = useState("")
+  const [filtroEsporte, setFiltroEsporte] = useState("todos")
+  const [filtroLocalizacao, setFiltroLocalizacao] = useState("todas")
   const [busca, setBusca] = useState("")
   const [visualizacao, setVisualizacao] = useState("cards")
   const [ordenacao, setOrdenacao] = useState("pontos")
@@ -148,8 +148,8 @@ export default function AtletasPage() {
 
   const atletasFiltrados = atletas
     .filter((atleta) => {
-      const matchEsporte = filtroEsporte ? atleta.esportesFavoritos.includes(filtroEsporte) : true
-      const matchLocalizacao = filtroLocalizacao ? atleta.localizacao === filtroLocalizacao : true
+      const matchEsporte = filtroEsporte && filtroEsporte !== "todos" ? atleta.esportesFavoritos.includes(filtroEsporte) : true
+      const matchLocalizacao = filtroLocalizacao && filtroLocalizacao !== "todas" ? atleta.localizacao === filtroLocalizacao : true
       const matchBusca = busca
         ? atleta.nome.toLowerCase().includes(busca.toLowerCase()) ||
           atleta.username.toLowerCase().includes(busca.toLowerCase())
@@ -224,7 +224,7 @@ export default function AtletasPage() {
                       <SelectValue placeholder="Todos os esportes" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos os esportes</SelectItem>
+                      <SelectItem value="todos">Todos os esportes</SelectItem>
                       {esportes.map((esporte) => (
                         <SelectItem key={esporte} value={esporte}>
                           {esporte}
@@ -240,7 +240,7 @@ export default function AtletasPage() {
                       <SelectValue placeholder="Todas as localizações" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todas as localizações</SelectItem>
+                      <SelectItem value="todas">Todas as localizações</SelectItem>
                       {localizacoes.map((localizacao) => (
                         <SelectItem key={localizacao} value={localizacao}>
                           {localizacao}
@@ -269,8 +269,8 @@ export default function AtletasPage() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    setFiltroEsporte("")
-                    setFiltroLocalizacao("")
+                    setFiltroEsporte("todos")
+                    setFiltroLocalizacao("todas")
                   }}
                 >
                   Limpar filtros
@@ -433,8 +433,8 @@ export default function AtletasPage() {
                             variant="outline"
                             className="mt-4"
                             onClick={() => {
-                              setFiltroEsporte("")
-                              setFiltroLocalizacao("")
+                              setFiltroEsporte("todos")
+                              setFiltroLocalizacao("todas")
                               setBusca("")
                             }}
                           >
@@ -555,8 +555,8 @@ export default function AtletasPage() {
                   variant="outline"
                   className="mt-4"
                   onClick={() => {
-                    setFiltroEsporte("")
-                    setFiltroLocalizacao("")
+                    setFiltroEsporte("todos")
+                    setFiltroLocalizacao("todas")
                     setBusca("")
                   }}
                 >

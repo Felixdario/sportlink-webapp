@@ -2,9 +2,9 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, Plus, X } from "lucide-react"
+import { ChevronLeft, Plus, X, Search, MapPin, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,6 +12,15 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { getCourts } from "@/lib/data/courts"
 
 interface PartidaAmistosa {
   id: number
@@ -35,6 +44,10 @@ const esportes = ["Futebol", "Basquete", "Vôlei", "Futsal", "Tênis", "Badminto
 
 export default function CriarPartidaPage() {
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
+  const [isQuadraDialogAberto, setIsQuadraDialogAberto] = useState(false)
+  const [quadrasDisponiveis, setQuadrasDisponiveis] = useState<any[]>([])
+  const [quadraSelecionada, setQuadraSelecionada] = useState<any | null>(null)
   const [formData, setFormData] = useState({
     nome: "",
     descricao: "",
@@ -49,6 +62,43 @@ export default function CriarPartidaPage() {
   })
   const [novoParticipante, setNovoParticipante] = useState("")
   const [isCarregando, setIsCarregando] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    carregarQuadras()
+  }, [])
+
+  // Efeito para recarregar quadras quando a página ganha foco (usuário volta de outra página)
+  useEffect(() => {
+    const handleFocus = () => {
+      carregarQuadras()
+    }
+
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [])
+
+  const carregarQuadras = () => {
+    // Carregar quadras do organizador
+    const organizerId = "org1" // Em produção, viria do contexto de autenticação
+    const quadras = getCourts(organizerId)
+    setQuadrasDisponiveis(quadras)
+  }
+
+  const handleSelecionarQuadra = (quadra: any) => {
+    setQuadraSelecionada(quadra)
+    setFormData((prev) => ({
+      ...prev,
+      local: quadra.name,
+      endereco: quadra.address,
+      custoQuadra: quadra.price.toString(),
+    }))
+    setIsQuadraDialogAberto(false)
+  }
+
+  const abrirSeletorQuadras = () => {
+    setIsQuadraDialogAberto(true)
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -135,6 +185,10 @@ export default function CriarPartidaPage() {
     } finally {
       setIsCarregando(false)
     }
+  }
+
+  if (!mounted) {
+    return null
   }
 
   return (
@@ -230,28 +284,60 @@ export default function CriarPartidaPage() {
 
             {/* Local */}
             <div className="space-y-2">
-              <Label htmlFor="local">Local (nome da quadra) *</Label>
-              <Input
-                id="local"
-                name="local"
-                placeholder="Ex: Quadra Poliesportiva Central"
-                value={formData.local}
-                onChange={handleInputChange}
-                required
-              />
+              <Label htmlFor="local">Nome do local *</Label>
+              <div className="relative">
+                <Input
+                  id="local"
+                  placeholder="Selecione uma quadra cadastrada..."
+                  value={formData.local}
+                  readOnly
+                  onClick={abrirSeletorQuadras}
+                  className="cursor-pointer"
+                  disabled={isCarregando}
+                />
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Clique para selecionar uma das suas quadras cadastradas
+              </p>
             </div>
 
-            {/* Endereço */}
-            <div className="space-y-2">
-              <Label htmlFor="endereco">Endereço</Label>
-              <Input
-                id="endereco"
-                name="endereco"
-                placeholder="Rua, número, bairro"
-                value={formData.endereco}
-                onChange={handleInputChange}
-              />
-            </div>
+            {quadraSelecionada && (
+              <div className="p-4 border rounded-lg bg-muted/30">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h4 className="font-medium">{quadraSelecionada.name}</h4>
+                    <p className="text-sm text-muted-foreground mt-1">{quadraSelecionada.address}</p>
+                    <p className="text-sm text-muted-foreground">{quadraSelecionada.neighborhood}</p>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {quadraSelecionada.sports.map((sport: string) => (
+                        <span
+                          key={sport}
+                          className="text-xs bg-primary/10 text-primary px-2 py-1 rounded"
+                        >
+                          {sport}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-2">
+                      <p>📍 {quadraSelecionada.address}</p>
+                      <p>💰 R$ {quadraSelecionada.price}/hora</p>
+                      {quadraSelecionada.rating && (
+                        <p>⭐ {quadraSelecionada.rating} ({quadraSelecionada.totalReviews} avaliações)</p>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={abrirSeletorQuadras}
+                    disabled={isCarregando}
+                  >
+                    Alterar
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Custo da Quadra e Vagas */}
             <div className="grid grid-cols-2 gap-4">
@@ -295,6 +381,95 @@ export default function CriarPartidaPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Dialog para seleção de quadras */}
+        <Dialog open={isQuadraDialogAberto} onOpenChange={setIsQuadraDialogAberto}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <DialogTitle>Selecionar Quadra</DialogTitle>
+                  <DialogDescription>
+                    Escolha uma das suas quadras cadastradas para a partida
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+            
+            <Command>
+              <CommandInput placeholder="Buscar quadras..." />
+              <CommandList>
+                <CommandEmpty>
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground mb-3">Nenhuma quadra encontrada.</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={carregarQuadras}
+                    >
+                      🔄 Atualizar
+                    </Button>
+                  </div>
+                </CommandEmpty>
+                <CommandGroup>
+                  {quadrasDisponiveis.map((quadra) => (
+                    <CommandItem
+                      key={quadra.id}
+                      onSelect={() => handleSelecionarQuadra(quadra)}
+                      className="cursor-pointer"
+                    >
+                      <div className="flex items-center space-x-2 w-full">
+                        <div className="flex-1">
+                          <div className="font-medium">{quadra.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {quadra.neighborhood}
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {quadra.sports.slice(0, 2).map((sport: string) => (
+                              <span
+                                key={sport}
+                                className="text-xs bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded"
+                              >
+                                {sport}
+                              </span>
+                            ))}
+                            {quadra.sports.length > 2 && (
+                              <span className="text-xs text-muted-foreground">
+                                +{quadra.sports.length - 2}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {quadraSelecionada?.id === quadra.id && (
+                          <Check className="h-4 w-4 text-primary" />
+                        )}
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+
+            {quadrasDisponiveis.length === 0 && (
+              <div className="text-center py-6">
+                <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">Nenhuma quadra cadastrada</h3>
+                <p className="text-muted-foreground mb-4">
+                  Você precisa cadastrar pelo menos uma quadra para criar uma partida.
+                </p>
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    onClick={carregarQuadras}
+                    className="w-full"
+                  >
+                    🔄 Atualizar Lista
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* Participantes */}
         <Card className="mt-6">

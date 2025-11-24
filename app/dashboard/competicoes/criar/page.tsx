@@ -9,7 +9,7 @@ import { createCompeticao } from "@/lib/api"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { CalendarIcon, Trophy, Upload, MapPin, Plus, Minus, AlertCircle, Loader2, Search, Check } from "lucide-react"
+import { CalendarIcon, Trophy, Upload, MapPin, Plus, Minus, AlertCircle, Loader2, Search, Check, ChevronLeft } from "lucide-react"
 import { getCourts } from "@/lib/data/courts"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -299,6 +299,10 @@ export default function CriarCompeticaoPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center mb-8">
+        <Button variant="ghost" size="sm" onClick={() => router.back()}>
+          <ChevronLeft className="h-4 w-4 mr-2" />
+          Voltar
+        </Button>
         <Trophy className="h-8 w-8 text-primary-sportlink mr-3" />
         <h1 className="text-3xl font-bold">Criar nova competição</h1>
       </div>
@@ -685,13 +689,6 @@ export default function CriarCompeticaoPage() {
                           Você precisa cadastrar pelo menos uma quadra para criar uma competição.
                         </p>
                         <div className="space-y-2">
-                          <Button
-                            onClick={() => window.open("/organizer/courts/new", "_blank")}
-                            className="w-full bg-gradient-to-r from-primary-sportlink to-rose-500"
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Cadastrar Nova Quadra
-                          </Button>
                           <Button
                             variant="outline"
                             onClick={carregarQuadras}
